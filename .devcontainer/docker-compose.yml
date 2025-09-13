@@ -1,0 +1,22 @@
+version: '3.9'
+services:
+  devcontainer:
+    image: mcr.microsoft.com/devcontainers/typescript-node
+    volumes:
+      - ../..:/workspaces:cached
+    network_mode: service:db
+    command: sleep infinity
+
+  # based on information from: https://stackoverflow.com/questions/69476842/devcontainers-with-mongodb-on-special-port
+  db:
+    image: mongo:latest
+    restart: unless-stopped
+    volumes:
+      - mongodb-data:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME:
+      MONGO_INITDB_ROOT_PASSWORD:
+      MONGO_INITDB_DATABASE: local
+
+volumes:
+  mongodb-data:
