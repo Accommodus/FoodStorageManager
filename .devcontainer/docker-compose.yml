@@ -21,7 +21,9 @@ services:
     command: sh -lc "npm ci && npm run dev"
     # Bind to host loopback only (not exposed to LAN)
     ports:
-      - "127.0.0.1:5173:5173"
+      - "127.0.0.1:${C_PORT}:${C_PORT}"
+    environment:
+      C_PORT: ${C_PORT}
     restart: unless-stopped
     depends_on:
       db:
@@ -36,11 +38,11 @@ services:
     command: sh -lc "npm ci && npm run dev"
     # Bind to host loopback only (not exposed to LAN)
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${S_PORT}:${S_PORT}"
     environment:
       # App connects to Mongo via Docker DNS, not localhost
       MONGODB_URI: mongodb://dev:dev@db:27017/local?authSource=admin
-      PORT: 3000
+      S_PORT: ${S_PORT}
     restart: unless-stopped
     depends_on:
       db:

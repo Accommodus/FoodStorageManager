@@ -3,10 +3,6 @@
     "dockerComposeFile": "docker-compose.yml",
     "service": "devcontainer",
     "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-    "forwardPorts": [
-        5173,
-        3000
-    ],
     "postCreateCommand": "sudo npm install",
     "runServices": [
         "client",
