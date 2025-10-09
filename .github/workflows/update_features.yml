@@ -1,0 +1,150 @@
+name: Merge dev into feature branches (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      feature_prefix:
+        description: 'Branch prefix to target (glob under refs/remotes/origin/)'
+        default: 'feature/*'
+        required: true
+        type: string
+      dev_branch:
+        description: 'Name of the dev branch to merge from'
+        default: 'dev'
+        required: true
+        type: string
+
+permissions:
+  contents: write  # required to push back to the repo
+
+concurrency:
+  group: merge-dev-into-features
+  cancel-in-progress: false
+
+jobs:
+  merge-dev-into-features:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (fetch all history and branches)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true  # use GITHUB_TOKEN
+
+      - name: Configure git user
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Merge ${{ inputs.dev_branch }} into each ${{ inputs.feature_prefix }} branch
+        id: merge_loop
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DEV="${{ inputs.dev_branch }}"
+          PREFIX_GLOB="${{ inputs.feature_prefix }}"
+
+          # Make sure we have the latest remotes
+          git remote set-url origin "$(git remote get-url origin)"
+          git fetch --all --prune
+
+          # Collect lists for the summary
+          merged=()
+          up_to_date=()
+          conflicts=()
+          missing_dev=()
+
+          # Ensure dev exists on remote
+          if ! git ls-remote --exit-code --heads origin "${DEV}" >/dev/null 2>&1; then
+            echo "Dev branch 'origin/${DEV}' not found."
+            echo "conflicts=" >> "$GITHUB_OUTPUT"
+            echo "merged=" >> "$GITHUB_OUTPUT"
+            echo "up_to_date=" >> "$GITHUB_OUTPUT"
+            echo "missing_dev=${DEV}" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+          # Enumerate remote feature/* branches (strip refs/remotes/origin/)
+          mapfile -t feature_branches < <(git for-each-ref --format='%(refname:short)' "refs/remotes/origin/${PREFIX_GLOB}")
+
+          if (( ${#feature_branches[@]} == 0 )); then
+            echo "No branches matched origin/${PREFIX_GLOB}"
+            echo "merged=" >> "$GITHUB_OUTPUT"
+            echo "up_to_date=" >> "$GITHUB_OUTPUT"
+            echo "conflicts=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          for remote_branch in "${feature_branches[@]}"; do
+            b="${remote_branch#origin/}"
+
+            echo ""
+            echo "====== Processing ${b} ======"
+
+            # Create/refresh a local branch tracking the remote
+            git checkout -B "${b}" "origin/${b}"
+
+            # Record HEAD before merge to detect no-op merges
+            before=$(git rev-parse HEAD)
+
+            # Try the merge
+            set +e
+            git merge --no-ff --no-edit "origin/${DEV}"
+            status=$?
+            set -e
+
+            if [[ $status -eq 0 ]]; then
+              after=$(git rev-parse HEAD)
+              if [[ "$before" == "$after" ]]; then
+                echo "No changes needed; ${b} already contains ${DEV}."
+                up_to_date+=("${b}")
+                # Ensure we don't leave an unnecessary local commit; nothing to push.
+                git reset --hard "origin/${b}"
+              else
+                echo "Merge successful. Pushing ${b}..."
+                git push origin "HEAD:${b}"
+                merged+=("${b}")
+              fi
+            else
+              echo "Conflict detected in ${b}. Aborting merge and recording."
+              # Clean up the in-progress merge to keep working tree clean
+              git merge --abort || true
+              git reset --hard "origin/${b}"
+              conflicts+=("${b}")
+            fi
+          done
+
+          # Emit outputs
+          echo "merged=${merged[*]}" >> "$GITHUB_OUTPUT"
+          echo "up_to_date=${up_to_date[*]}" >> "$GITHUB_OUTPUT"
+          echo "conflicts=${conflicts[*]}" >> "$GITHUB_OUTPUT"
+
+          # Write a nice summary
+          {
+            echo "## Merge summary"
+            echo ""
+            echo "- **Dev branch:** \`origin/${DEV}\`"
+            echo "- **Target pattern:** \`origin/${PREFIX_GLOB}\`"
+            echo ""
+            echo "### ✅ Successfully merged & pushed"
+            if (( ${#merged[@]} )); then
+              for b in "${merged[@]}"; do echo "- \`${b}\`"; done
+            else
+              echo "- _(none)_"
+            fi
+            echo ""
+            echo "### ⏭️ Already up to date"
+            if (( ${#up_to_date[@]} )); then
+              for b in "${up_to_date[@]}"; do echo "- \`${b}\`"; done
+            else
+              echo "- _(none)_"
+            fi
+            echo ""
+            echo "### ⚠️ Conflicts (manual merge required)"
+            if (( ${#conflicts[@]} )); then
+              for b in "${conflicts[@]}"; do echo "- \`${b}\`"; done
+            else
+              echo "- _(none)_"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
