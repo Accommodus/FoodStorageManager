@@ -7,6 +7,7 @@ export default defineConfig({
     plugins: [react(), tailwindcss()],
     server: {
         host: '0.0.0.0',
-        port: 5173,
+        port: Number(process.env.C_PORT ?? (() => { throw new Error('Missing Client Port'); }))
+    ,
     },
 });
