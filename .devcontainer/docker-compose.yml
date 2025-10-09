@@ -55,7 +55,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: dev
       MONGO_INITDB_ROOT_PASSWORD: dev
       MONGO_INITDB_DATABASE: local
-    # ❌ No ports block: DB is private to the Docker network only
+    
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
       interval: 5s
