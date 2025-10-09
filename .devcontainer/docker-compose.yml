@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   devcontainer:
     image: mcr.microsoft.com/devcontainers/typescript-node
@@ -21,11 +19,12 @@ services:
     command: sh -lc "npm ci && npm run dev"
     # Bind to host loopback only (not exposed to LAN)
     ports:
-      - "127.0.0.1:5173:5173"
+      - "127.0.0.1:${C_PORT}:${C_PORT}"
+    environment:
+      C_PORT: ${C_PORT}
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
+    depends_on: 
+      - db
 
   server:
     image: node:24
@@ -36,32 +35,21 @@ services:
     command: sh -lc "npm ci && npm run dev"
     # Bind to host loopback only (not exposed to LAN)
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:${S_PORT}:${S_PORT}"
     environment:
       # App connects to Mongo via Docker DNS, not localhost
-      MONGODB_URI: mongodb://dev:dev@db:27017/local?authSource=admin
-      PORT: 3000
+      MONGODB_URI: mongodb://db:27017/local
+      S_PORT: ${S_PORT}
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
+    depends_on: 
+      - db
 
   db:
     image: mongo:latest
     restart: unless-stopped
     volumes:
       - mongodb-data:/data/db
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: dev
-      MONGO_INITDB_ROOT_PASSWORD: dev
-      MONGO_INITDB_DATABASE: local
-    # ❌ No ports block: DB is private to the Docker network only
-    healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
-      start_period: 15s
+    command: ["mongod", "--bind_ip_all", "--noauth"]
 
 volumes:
   mongodb-data:
