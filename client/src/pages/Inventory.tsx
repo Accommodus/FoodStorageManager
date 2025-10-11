@@ -1,4 +1,4 @@
-import { InventoryList } from '../features/InventoryList';
+import { InventoryList } from '@features/InventoryList';
 
 const Inventory = () => {
     return (
