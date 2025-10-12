@@ -1,9 +1,19 @@
 import express from "express";
-import cors from 'cors';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
+import cors from "cors";
+import mongoose from "mongoose";
+import { ServerHealth } from "./types";
+import { getHealth } from "./health";
+import { createItem } from "./item";
 
-dotenv.config();
+function connectDB(uri: string): ServerHealth {
+  try {
+    mongoose.connect(uri);
+    return { ok: true, value: mongoose.connection };
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    return { ok: false, error };
+  }
+}
 
 const app: express.Express = express();
 
@@ -11,24 +21,44 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const uri: string =
-    process.env.MONGODB_URI || 'mongodb://localhost:27017/your-app';
+const port: string =
+  process.env.S_PORT ??
+  (() => {
+    throw new Error("Missing Server Port");
+  })();
+//const port: string = process.env.S_PORT ?? "3000";
+const mongoUri: string =
+  process.env.MONGODB_URI ??
+  (() => {
+    throw new Error("Missing MONGODB_URI");
+  })();
+//const mongoUri: string = process.env.MONGODB_URI ?? "mongodb://db:27017/local"
 
-(async () => {
-    try {
-        await mongoose.connect(uri);
-        console.log('Connected to the database');
-    } catch(error) {
-        console.error(error);
-    }
-})();
 
-app.get('/health', (_req: express.Request, res: express.Response) => {
-    res.status(200).send('Server is running');
+
+let connection = connectDB(mongoUri);
+
+app.get("/health", (req, res) => {
+  getHealth(req, res, connection);
 });
 
-const PORT: string | number = process.env.PORT || 3000;
+if (connection.ok) {
+  let db = connection.value;
+  app.post("/item", (req, res) => {
+    createItem(req, res, db);
+  });
+  app.get("/", (req, res) => {
+    res.status(200).send("server is running.");
+  });
+} else {
+  app.use((req, res, next) => {
+    if (req.path !== "/health") {
+      return res.redirect("/health");
+    }
+    next();
+  });
+}
 
-app.listen(PORT, () => {
-    console.log(`Server is running on PORT: ${PORT}`);
+app.listen(port, () => {
+  console.log(`Server is running on PORT: ${port}`);
 });
