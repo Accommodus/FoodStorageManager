@@ -1,25 +1,21 @@
-name: Merge dev into feature branches (manual)
+name: Merge dev into feature branches
 
 on:
-  workflow_dispatch:
-    inputs:
-      feature_prefix:
-        description: 'Branch prefix to target (glob under refs/remotes/origin/)'
-        default: 'feature/*'
-        required: true
-        type: string
-      dev_branch:
-        description: 'Name of the dev branch to merge from'
-        default: 'dev'
-        required: true
-        type: string
+  push:
+    branches:
+      - dev            #  trigger when dev is updated (including merges)
+  workflow_dispatch:   #  manual run available
 
 permissions:
-  contents: write  # required to push back to the repo
+  contents: write
 
 concurrency:
   group: merge-dev-into-features
   cancel-in-progress: false
+
+env:
+  FEATURE_PREFIX: 'feature/*'
+  DEV_BRANCH: 'dev'
 
 jobs:
   merge-dev-into-features:
@@ -29,33 +25,29 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          persist-credentials: true  # use GITHUB_TOKEN
+          persist-credentials: true
 
       - name: Configure git user
         run: |
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
 
-      - name: Merge ${{ inputs.dev_branch }} into each ${{ inputs.feature_prefix }} branch
+      - name: Merge ${{ env.DEV_BRANCH }} into each ${{ env.FEATURE_PREFIX }} branch
         id: merge_loop
         shell: bash
         run: |
           set -euo pipefail
+          DEV="${{ env.DEV_BRANCH }}"
+          PREFIX_GLOB="${{ env.FEATURE_PREFIX }}"
 
-          DEV="${{ inputs.dev_branch }}"
-          PREFIX_GLOB="${{ inputs.feature_prefix }}"
-
-          # Make sure we have the latest remotes
           git remote set-url origin "$(git remote get-url origin)"
           git fetch --all --prune
 
-          # Collect lists for the summary
           merged=()
           up_to_date=()
           conflicts=()
           missing_dev=()
 
-          # Ensure dev exists on remote
           if ! git ls-remote --exit-code --heads origin "${DEV}" >/dev/null 2>&1; then
             echo "Dev branch 'origin/${DEV}' not found."
             echo "conflicts=" >> "$GITHUB_OUTPUT"
@@ -65,9 +57,7 @@ jobs:
             exit 1
           fi
 
-          # Enumerate remote feature/* branches (strip refs/remotes/origin/)
           mapfile -t feature_branches < <(git for-each-ref --format='%(refname:short)' "refs/remotes/origin/${PREFIX_GLOB}")
-
           if (( ${#feature_branches[@]} == 0 )); then
             echo "No branches matched origin/${PREFIX_GLOB}"
             echo "merged=" >> "$GITHUB_OUTPUT"
@@ -78,17 +68,12 @@ jobs:
 
           for remote_branch in "${feature_branches[@]}"; do
             b="${remote_branch#origin/}"
-
             echo ""
             echo "====== Processing ${b} ======"
-
-            # Create/refresh a local branch tracking the remote
             git checkout -B "${b}" "origin/${b}"
 
-            # Record HEAD before merge to detect no-op merges
             before=$(git rev-parse HEAD)
 
-            # Try the merge
             set +e
             git merge --no-ff --no-edit "origin/${DEV}"
             status=$?
@@ -99,7 +84,6 @@ jobs:
               if [[ "$before" == "$after" ]]; then
                 echo "No changes needed; ${b} already contains ${DEV}."
                 up_to_date+=("${b}")
-                # Ensure we don't leave an unnecessary local commit; nothing to push.
                 git reset --hard "origin/${b}"
               else
                 echo "Merge successful. Pushing ${b}..."
@@ -108,19 +92,16 @@ jobs:
               fi
             else
               echo "Conflict detected in ${b}. Aborting merge and recording."
-              # Clean up the in-progress merge to keep working tree clean
               git merge --abort || true
               git reset --hard "origin/${b}"
               conflicts+=("${b}")
             fi
           done
 
-          # Emit outputs
           echo "merged=${merged[*]}" >> "$GITHUB_OUTPUT"
           echo "up_to_date=${up_to_date[*]}" >> "$GITHUB_OUTPUT"
           echo "conflicts=${conflicts[*]}" >> "$GITHUB_OUTPUT"
 
-          # Write a nice summary
           {
             echo "## Merge summary"
             echo ""
