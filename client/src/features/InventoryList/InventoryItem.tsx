@@ -1,8 +1,20 @@
-import { BiSolidBaguette, BiSolidTruck, BiSolidPencil } from 'react-icons/bi';
+import {
+    BiCheckbox,
+    BiCheckboxSquare,
+    BiSolidBaguette,
+    BiSolidTruck,
+    BiSolidPencil,
+} from 'react-icons/bi';
+import { useState } from 'react';
 
 const InventoryItem = () => {
+    const [selected, setSelected] = useState(false);
+
     return (
         <div className="relative h-96 w-80 overflow-hidden rounded-2xl bg-neutral-100 shadow-md">
+            {selected ? (
+                <div className="bg-secondary-500 absolute z-10 h-full w-full opacity-20" />
+            ) : null}
             <div className="bg-neutral-150 relative h-36 content-center">
                 <BiSolidBaguette className="m-auto size-20 text-neutral-300" />
                 <div className="absolute -bottom-2 flex w-full justify-between p-4">
@@ -21,9 +33,23 @@ const InventoryItem = () => {
                     Dolor sit amet consectetur adipiscing elit quisque faucibus.
                 </p>
             </div>
-            <div className="absolute bottom-0 flex w-full justify-end gap-4 p-4">
-                <BiSolidTruck className="size-8 text-neutral-400" />
-                <BiSolidPencil className="text-accent-500 size-8" />
+            <div className="absolute bottom-0 flex w-full gap-4 p-4">
+                <button
+                    onClick={() => setSelected((prev) => !prev)}
+                    className="z-20 mr-auto"
+                >
+                    {selected ? (
+                        <BiCheckboxSquare className="size-8 text-neutral-700" />
+                    ) : (
+                        <BiCheckbox className="size-8 text-neutral-700" />
+                    )}
+                </button>
+                <button className="">
+                    <BiSolidTruck className="size-8 text-neutral-400" />
+                </button>
+                <button>
+                    <BiSolidPencil className="text-accent-500 size-8" />
+                </button>
             </div>
         </div>
     );
