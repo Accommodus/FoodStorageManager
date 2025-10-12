@@ -33,7 +33,7 @@ const InventoryItem = () => {
                     Dolor sit amet consectetur adipiscing elit quisque faucibus.
                 </p>
             </div>
-            <div className="absolute bottom-0 flex w-full gap-4 p-4">
+            <div className="absolute bottom-0 z-20 flex w-full gap-4 p-4">
                 <button
                     onClick={() => setSelected((prev) => !prev)}
                     className="z-20 mr-auto"
@@ -44,7 +44,7 @@ const InventoryItem = () => {
                         <BiCheckbox className="size-8 text-neutral-700" />
                     )}
                 </button>
-                <button className="">
+                <button>
                     <BiSolidTruck className="size-8 text-neutral-400" />
                 </button>
                 <button>

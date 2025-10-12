@@ -51,7 +51,10 @@
 @layer base {
     body {
         font-family: "Barlow", sans-serif;
-        color: var(--color-neutral-950);
-        background-color: var(--color-neutral-200);
+        @apply text-neutral-950 bg-neutral-200;
+    }
+
+    button {
+        @apply cursor-pointer;
     }
 }
