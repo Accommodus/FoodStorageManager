@@ -2,7 +2,7 @@ import InventoryItem from './InventoryItem';
 
 export const InventoryList = () => {
     return (
-        <ul className="grid grid-cols-3 gap-6">
+        <ul className="flex flex-wrap gap-x-8 gap-y-12">
             <li>
                 <InventoryItem />
             </li>
