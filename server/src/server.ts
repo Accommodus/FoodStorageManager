@@ -8,6 +8,7 @@ import { createLocation } from "./location";
 import { upsertLot } from "./inventory";
 import { recordTransaction } from "./transaction";
 import { createAudit } from "./audit";
+import { createUser, listUsers } from "./user";
 
 function connectDB(uri: string): ServerHealth {
   try {
@@ -99,6 +100,8 @@ app.post("/locations", withDatabase(createLocation));
 app.put("/inventory/lots", withDatabase(upsertLot));
 app.post("/stock-transactions", withDatabase(recordTransaction));
 app.post("/audits", withDatabase(createAudit));
+app.get("/users", withDatabase(listUsers));
+app.post("/users", withDatabase(createUser));
 
 app.get("/", (req, res) => {
   if (!connection.ok) {
