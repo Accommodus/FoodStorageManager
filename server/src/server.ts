@@ -1,9 +1,13 @@
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import { ServerHealth } from "./types";
+import { ApiHandler, ServerHealth } from "./types";
 import { getHealth } from "./health";
 import { createItem } from "./item";
+import { createLocation } from "./location";
+import { upsertLot } from "./inventory";
+import { recordTransaction } from "./transaction";
+import { createAudit } from "./audit";
 
 function connectDB(uri: string): ServerHealth {
   try {
@@ -80,12 +84,21 @@ app.use((req, res, next) => {
   next();
 });
 
-app.post("/item", (req, res) => {
-  if (!db) {
-    return getHealth(req, res, connection);
-  }
-  createItem(req, res, db);
-});
+const withDatabase = (handler: ApiHandler) =>
+  async (req: express.Request, res: express.Response) => {
+    if (!db) {
+      return getHealth(req, res, connection);
+    }
+
+    await handler(req, res, db);
+  };
+
+app.post("/items", withDatabase(createItem));
+app.post("/item", withDatabase(createItem));
+app.post("/locations", withDatabase(createLocation));
+app.put("/inventory/lots", withDatabase(upsertLot));
+app.post("/stock-transactions", withDatabase(recordTransaction));
+app.post("/audits", withDatabase(createAudit));
 
 app.get("/", (req, res) => {
   if (!connection.ok) {
