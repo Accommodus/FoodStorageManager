@@ -13,11 +13,14 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/models/index.d.ts",
-      "import": "./dist/models/index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./types": {
       "types": "./dist/types/index.d.ts"
-      }
-  }
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js"
 }
