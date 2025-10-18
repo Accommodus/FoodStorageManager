@@ -1,16 +1,16 @@
 import { StatusCodes } from "http-status-codes";
 import { ApiHandler, ApiResponse } from "./types.js";
 import {
-  createItemRecord,
-  type CreateItemFailure,
-  type CreateItemRequest,
-  type CreateItemSuccess,
+  createAuditRecord,
+  type CreateAuditFailure,
+  type CreateAuditRequest,
+  type CreateAuditSuccess,
 } from "@foodstoragemanager/schema";
 import { mapErrorToIssues, mapErrorToStatus } from "./error-utils.js";
 
-const isCreateItemRequest = (
+const isCreateAuditRequest = (
   payload: unknown
-): payload is CreateItemRequest => {
+): payload is CreateAuditRequest => {
   if (
     typeof payload !== "object" ||
     payload === null ||
@@ -19,31 +19,31 @@ const isCreateItemRequest = (
     return false;
   }
 
-  const body = (payload as CreateItemRequest).body;
-  return typeof body === "object" && body !== null && "item" in body;
+  const body = (payload as CreateAuditRequest).body;
+  return typeof body === "object" && body !== null && "audit" in body;
 };
 
-export const createItem: ApiHandler = async (req, res, db) => {
+export const createAudit: ApiHandler = async (req, res, db) => {
   if (db.readyState !== 1) {
     return res.redirect("/health");
   }
 
   const payload = req.body;
 
-  if (!isCreateItemRequest(payload)) {
-    const failure: CreateItemFailure = {
+  if (!isCreateAuditRequest(payload)) {
+    const failure: CreateAuditFailure = {
       status: StatusCodes.BAD_REQUEST,
-      error: { message: "Invalid item request payload." },
+      error: { message: "Invalid audit payload." },
     };
     return new ApiResponse(StatusCodes.BAD_REQUEST, failure).send(res);
   }
 
   try {
-    const createdItem = await createItemRecord(db, payload.body.item);
-    const item = createdItem.toObject();
+    const audit = await createAuditRecord(db, payload.body.audit);
+    const serialized = audit.toObject();
 
-    const success: CreateItemSuccess = {
-      data: { item },
+    const success: CreateAuditSuccess = {
+      data: { audit: serialized },
       status: StatusCodes.CREATED,
     };
 
@@ -51,8 +51,9 @@ export const createItem: ApiHandler = async (req, res, db) => {
   } catch (error) {
     const status = mapErrorToStatus(error);
     const message =
-      error instanceof Error ? error.message : "Failed to create item.";
-    const failure: CreateItemFailure = {
+      error instanceof Error ? error.message : "Failed to create audit.";
+
+    const failure: CreateAuditFailure = {
       status,
       error: {
         message,

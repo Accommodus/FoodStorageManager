@@ -1,16 +1,16 @@
 import { StatusCodes } from "http-status-codes";
 import { ApiHandler, ApiResponse } from "./types.js";
 import {
-  createItemRecord,
-  type CreateItemFailure,
-  type CreateItemRequest,
-  type CreateItemSuccess,
+  createLocationRecord,
+  type CreateLocationFailure,
+  type CreateLocationRequest,
+  type CreateLocationSuccess,
 } from "@foodstoragemanager/schema";
 import { mapErrorToIssues, mapErrorToStatus } from "./error-utils.js";
 
-const isCreateItemRequest = (
+const isCreateLocationRequest = (
   payload: unknown
-): payload is CreateItemRequest => {
+): payload is CreateLocationRequest => {
   if (
     typeof payload !== "object" ||
     payload === null ||
@@ -19,31 +19,34 @@ const isCreateItemRequest = (
     return false;
   }
 
-  const body = (payload as CreateItemRequest).body;
-  return typeof body === "object" && body !== null && "item" in body;
+  const body = (payload as CreateLocationRequest).body;
+  return typeof body === "object" && body !== null && "location" in body;
 };
 
-export const createItem: ApiHandler = async (req, res, db) => {
+export const createLocation: ApiHandler = async (req, res, db) => {
   if (db.readyState !== 1) {
     return res.redirect("/health");
   }
 
   const payload = req.body;
 
-  if (!isCreateItemRequest(payload)) {
-    const failure: CreateItemFailure = {
+  if (!isCreateLocationRequest(payload)) {
+    const failure: CreateLocationFailure = {
       status: StatusCodes.BAD_REQUEST,
-      error: { message: "Invalid item request payload." },
+      error: { message: "Invalid location request payload." },
     };
     return new ApiResponse(StatusCodes.BAD_REQUEST, failure).send(res);
   }
 
   try {
-    const createdItem = await createItemRecord(db, payload.body.item);
-    const item = createdItem.toObject();
+    const createdLocation = await createLocationRecord(
+      db,
+      payload.body.location
+    );
+    const location = createdLocation.toObject();
 
-    const success: CreateItemSuccess = {
-      data: { item },
+    const success: CreateLocationSuccess = {
+      data: { location },
       status: StatusCodes.CREATED,
     };
 
@@ -51,8 +54,9 @@ export const createItem: ApiHandler = async (req, res, db) => {
   } catch (error) {
     const status = mapErrorToStatus(error);
     const message =
-      error instanceof Error ? error.message : "Failed to create item.";
-    const failure: CreateItemFailure = {
+      error instanceof Error ? error.message : "Failed to create location.";
+
+    const failure: CreateLocationFailure = {
       status,
       error: {
         message,

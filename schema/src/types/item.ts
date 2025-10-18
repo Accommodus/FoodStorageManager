@@ -26,7 +26,7 @@ export type CreateItemSuccess = ApiResponse<
 
 export type CreateItemFailure = ApiResponse<
   ResponseError<{ message: string; issues?: Record<string, unknown> }>,
-  ResponseStatus<400 | 500>
+  ResponseStatus<400 | 409 | 500>
 >;
 
 export type CreateItemResponse = CreateItemSuccess | CreateItemFailure;
