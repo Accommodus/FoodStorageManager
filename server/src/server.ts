@@ -26,15 +26,16 @@ const port: string =
   (() => {
     throw new Error("Missing Server Port");
   })();
+
 //const port: string = process.env.S_PORT ?? "3000";
+
 const mongoUri: string =
   process.env.MONGODB_URI ??
   (() => {
     throw new Error("Missing MONGODB_URI");
   })();
+
 //const mongoUri: string = process.env.MONGODB_URI ?? "mongodb://db:27017/local"
-
-
 
 let connection = connectDB(mongoUri);
 
