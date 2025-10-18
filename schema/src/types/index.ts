@@ -1,5 +1,9 @@
 export type { User } from "../models/user.model";
 export type { Item } from "../models/item.model";
+export type { Location } from "../models/location.model";
+export type { InventoryLot } from "../models/inventory-lot.model";
+export type { StockTransaction } from "../models/stock-transaction.model";
+export type { Audit } from "../models/audit.model";
 
 export type {
   ApiRequest,
@@ -17,9 +21,51 @@ export type {
 } from "./api";
 
 export type {
+  UserDraft,
+  CreateUserRequest,
+  CreateUserSuccess,
+  CreateUserFailure,
+  CreateUserResponse,
+} from "./user";
+
+export type {
   ItemDraft,
   CreateItemRequest,
   CreateItemSuccess,
   CreateItemFailure,
   CreateItemResponse,
 } from "./item";
+
+export type {
+  AddressDraft,
+  LocationDraft,
+  CreateLocationRequest,
+  CreateLocationSuccess,
+  CreateLocationFailure,
+  CreateLocationResponse,
+} from "./location";
+
+export type {
+  InventoryLotDraft,
+  UpsertInventoryLotRequest,
+  UpsertInventoryLotSuccess,
+  UpsertInventoryLotFailure,
+  UpsertInventoryLotResponse,
+} from "./inventory-lot";
+
+export type {
+  StockTransactionDraft,
+  RecordStockTransactionRequest,
+  RecordStockTransactionSuccess,
+  RecordStockTransactionFailure,
+  RecordStockTransactionResponse,
+} from "./stock-transaction";
+
+export type {
+  AuditDraft,
+  AuditLineDraft,
+  CreateAuditRequest,
+  CreateAuditSuccess,
+  CreateAuditFailure,
+  CreateAuditResponse,
+} from "./audit";
