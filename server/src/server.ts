@@ -3,7 +3,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import { ApiHandler, ServerHealth } from "./types";
 import { getHealth } from "./health";
-import { createItem } from "./item";
+import { createItem, listItems } from "./item";
 import { createLocation } from "./location";
 import { upsertLot } from "./inventory";
 import { recordTransaction } from "./transaction";
@@ -93,6 +93,7 @@ const withDatabase = (handler: ApiHandler) =>
     await handler(req, res, db);
   };
 
+app.get("/items", withDatabase(listItems));
 app.post("/items", withDatabase(createItem));
 app.post("/item", withDatabase(createItem));
 app.post("/locations", withDatabase(createLocation));

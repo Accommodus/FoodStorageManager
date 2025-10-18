@@ -30,3 +30,17 @@ export type CreateItemFailure = ApiResponse<
 >;
 
 export type CreateItemResponse = CreateItemSuccess | CreateItemFailure;
+
+export type ListItemsRequest = ApiRequest<{}>;
+
+export type ListItemsSuccess = ApiResponse<
+  ResponseData<{ items: Item[] }>,
+  ResponseStatus<200>
+>;
+
+export type ListItemsFailure = ApiResponse<
+  ResponseError<{ message: string; issues?: Record<string, unknown> }>,
+  ResponseStatus<400 | 409 | 500>
+>;
+
+export type ListItemsResponse = ListItemsSuccess | ListItemsFailure;

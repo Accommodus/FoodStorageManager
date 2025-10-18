@@ -2,9 +2,12 @@ import { StatusCodes } from "http-status-codes";
 import { ApiHandler, ApiResponse } from "./types.js";
 import {
   createItemRecord,
+  listItems as listItemRecords,
   type CreateItemFailure,
   type CreateItemRequest,
   type CreateItemSuccess,
+  type ListItemsFailure,
+  type ListItemsSuccess,
 } from "@foodstoragemanager/schema";
 import { mapErrorToIssues, mapErrorToStatus } from "./error-utils.js";
 
@@ -53,6 +56,38 @@ export const createItem: ApiHandler = async (req, res, db) => {
     const message =
       error instanceof Error ? error.message : "Failed to create item.";
     const failure: CreateItemFailure = {
+      status,
+      error: {
+        message,
+        issues: mapErrorToIssues(error),
+      },
+    };
+
+    return new ApiResponse(status, failure).send(res);
+  }
+};
+
+export const listItems: ApiHandler = async (req, res, db) => {
+  if (db.readyState !== 1) {
+    return res.redirect("/health");
+  }
+
+  try {
+    const results = await listItemRecords(db);
+    const items = results.map((doc) => doc.toObject());
+
+    const success: ListItemsSuccess = {
+      data: { items },
+      status: StatusCodes.OK,
+    };
+
+    return new ApiResponse(StatusCodes.OK, success).send(res);
+  } catch (error) {
+    const status = mapErrorToStatus(error);
+    const message =
+      error instanceof Error ? error.message : "Failed to list items.";
+
+    const failure: ListItemsFailure = {
       status,
       error: {
         message,

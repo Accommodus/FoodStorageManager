@@ -5,6 +5,7 @@ import {
   type InferSchemaType,
   type Connection,
   type Model,
+  type HydratedDocument,
 } from "mongoose";
 import type { ItemDraft } from "../types/item";
 
@@ -81,4 +82,11 @@ export async function createItemRecord(
   const Item = getItemModel(connection);
   const normalized = normalizeItemDraft(draft);
   return Item.create(normalized);
+}
+
+export async function listItems(
+  connection: Connection
+): Promise<HydratedDocument<Item>[]> {
+  const Item = getItemModel(connection);
+  return Item.find().sort({ name: 1 }).exec();
 }
