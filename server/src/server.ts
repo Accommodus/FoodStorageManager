@@ -26,38 +26,73 @@ const port: string =
   (() => {
     throw new Error("Missing Server Port");
   })();
+
 //const port: string = process.env.S_PORT ?? "3000";
+
 const mongoUri: string =
   process.env.MONGODB_URI ??
   (() => {
     throw new Error("Missing MONGODB_URI");
   })();
+
 //const mongoUri: string = process.env.MONGODB_URI ?? "mongodb://db:27017/local"
 
-
-
 let connection = connectDB(mongoUri);
+let db = connection.ok ? connection.value : undefined;
+
+const markDisconnected = (reason?: Error) => {
+  connection = {
+    ok: false,
+    error:
+      reason ??
+      new Error("Lost connection to MongoDB. Falling back to health checks."),
+  };
+  db = undefined;
+};
+
+mongoose.connection.on("connected", () => {
+  connection = { ok: true, value: mongoose.connection };
+  db = mongoose.connection;
+});
+
+mongoose.connection.on("reconnected", () => {
+  connection = { ok: true, value: mongoose.connection };
+  db = mongoose.connection;
+});
+
+mongoose.connection.on("error", (err) => {
+  const error = err instanceof Error ? err : new Error(String(err));
+  markDisconnected(error);
+});
+
+mongoose.connection.on("disconnected", () => {
+  markDisconnected();
+});
 
 app.get("/health", (req, res) => {
   getHealth(req, res, connection);
 });
 
-if (connection.ok) {
-  let db = connection.value;
-  app.post("/item", (req, res) => {
-    createItem(req, res, db);
-  });
-  app.get("/", (req, res) => {
-    res.status(200).send("server is running.");
-  });
-} else {
-  app.use((req, res, next) => {
-    if (req.path !== "/health") {
-      return res.redirect("/health");
-    }
-    next();
-  });
-}
+app.use((req, res, next) => {
+  if (!connection.ok && req.path !== "/health") {
+    return getHealth(req, res, connection);
+  }
+  next();
+});
+
+app.post("/item", (req, res) => {
+  if (!db) {
+    return getHealth(req, res, connection);
+  }
+  createItem(req, res, db);
+});
+
+app.get("/", (req, res) => {
+  if (!connection.ok) {
+    return getHealth(req, res, connection);
+  }
+  res.status(200).send("server is running.");
+});
 
 app.listen(port, () => {
   console.log(`Server is running on PORT: ${port}`);
