@@ -1,11 +1,14 @@
 import { StatusCodes } from "http-status-codes";
+import { Types } from "mongoose";
 import { ApiHandler, ApiResponse } from "./types.js";
 import {
   createItemRecord,
   listItems as listItemRecords,
+  serializeItem,
   type CreateItemFailure,
   type CreateItemRequest,
   type CreateItemSuccess,
+  type ListItemsRequest,
   type ListItemsFailure,
   type ListItemsSuccess,
 } from "@foodstoragemanager/schema";
@@ -26,6 +29,25 @@ const isCreateItemRequest = (
   return typeof body === "object" && body !== null && "item" in body;
 };
 
+const isListItemsQuery = (
+  query: unknown
+): query is ListItemsRequest["query"] => {
+  if (!query || typeof query !== "object") {
+    return false;
+  }
+
+  const { locationId } = query as Record<string, unknown>;
+
+  if (Array.isArray(locationId)) {
+    return false;
+  }
+
+  return (
+    locationId === undefined ||
+    (typeof locationId === "string" && locationId.trim().length > 0)
+  );
+};
+
 export const createItem: ApiHandler = async (req, res, db) => {
   if (db.readyState !== 1) {
     return res.redirect("/health");
@@ -43,7 +65,7 @@ export const createItem: ApiHandler = async (req, res, db) => {
 
   try {
     const createdItem = await createItemRecord(db, payload.body.item);
-    const item = createdItem.toObject();
+    const item = serializeItem(createdItem);
 
     const success: CreateItemSuccess = {
       data: { item },
@@ -72,9 +94,43 @@ export const listItems: ApiHandler = async (req, res, db) => {
     return res.redirect("/health");
   }
 
+  if (!isListItemsQuery(req.query)) {
+    const failure: ListItemsFailure = {
+      status: StatusCodes.BAD_REQUEST,
+      error: {
+        message: "Invalid query parameters.",
+        issues: { query: req.query },
+      },
+    };
+
+    return new ApiResponse(StatusCodes.BAD_REQUEST, failure).send(res);
+  }
+
+  const locationId = req.query.locationId;
+
+  if (
+    locationId &&
+    (typeof locationId !== "string" ||
+      !Types.ObjectId.isValid(locationId.trim()))
+  ) {
+    const failure: ListItemsFailure = {
+      status: StatusCodes.BAD_REQUEST,
+      error: {
+        message: "Invalid locationId provided.",
+        issues: { locationId },
+      },
+    };
+
+    return new ApiResponse(StatusCodes.BAD_REQUEST, failure).send(res);
+  }
+
   try {
-    const results = await listItemRecords(db);
-    const items = results.map((doc) => doc.toObject());
+    const items = await listItemRecords(
+      db,
+      typeof locationId === "string" && locationId.trim().length > 0
+        ? { locationId: locationId.trim() }
+        : undefined
+    );
 
     const success: ListItemsSuccess = {
       data: { items },
