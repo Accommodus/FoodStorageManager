@@ -26,24 +26,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/*
 const port: string =
   process.env.S_PORT ??
   (() => {
     throw new Error("Missing Server Port");
   })();
-*/
-const port: string = process.env.S_PORT ?? "3000";
 
-/*
 const mongoUri: string =
   process.env.MONGODB_URI ??
   (() => {
     throw new Error("Missing MONGODB_URI");
   })();
-*/
-
-const mongoUri: string = process.env.MONGODB_URI ?? "mongodb://db:27017/local"
 
 let connection = connectDB(mongoUri);
 let db = connection.ok ? connection.value : undefined;
@@ -160,14 +153,13 @@ app.get("/routes", (req, res) => {
 
   if (!routes) {
     return res.status(503).json({
-      status: 503,
       error: {
         message: "Routes not initialized yet. Try again shortly.",
       },
     });
   }
 
-  res.json({ status: 200, data: { routes } });
+  res.json({ data: { routes } });
 });
 
 app.get("/", (req, res) => {
