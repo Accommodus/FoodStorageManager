@@ -30,10 +30,15 @@ export type {
 
 export type {
   ItemDraft,
+  ItemResource,
   CreateItemRequest,
   CreateItemSuccess,
   CreateItemFailure,
   CreateItemResponse,
+  ListItemsRequest,
+  ListItemsSuccess,
+  ListItemsFailure,
+  ListItemsResponse,
 } from "./item";
 
 export type {
