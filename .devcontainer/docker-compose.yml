@@ -9,6 +9,7 @@ services:
       C_PORT: ${C_PORT}
       MONGODB_URI: ${MONGODB_URI}
       S_PORT: ${S_PORT}
+      SERVER_URI: localhost:${S_PORT}
     depends_on:
       - client
       - server
@@ -26,6 +27,7 @@ services:
       - "127.0.0.1:${C_PORT}:${C_PORT}"
     environment:
       C_PORT: ${C_PORT}
+      SERVER_URI: localhost:${S_PORT}
     restart: unless-stopped
 
   server:

@@ -9,6 +9,7 @@ export default defineConfig({
         react(),
         tailwindcss(),
     ],
+    envPrefix: ['VITE_', 'SERVER_'],
     resolve: {
         alias: {
             '@features': resolve(__dirname, 'src/features'),
