@@ -32,7 +32,6 @@ export const recordTransaction: ApiHandler = async (req, res, db) => {
 
   if (!isRecordStockTransactionRequest(payload)) {
     const failure: RecordStockTransactionFailure = {
-      status: StatusCodes.BAD_REQUEST,
       error: { message: "Invalid stock transaction payload." },
     };
     return new ApiResponse(StatusCodes.BAD_REQUEST, failure).send(res);
@@ -47,7 +46,6 @@ export const recordTransaction: ApiHandler = async (req, res, db) => {
 
     const success: RecordStockTransactionSuccess = {
       data: { transaction: serialized },
-      status: StatusCodes.CREATED,
     };
 
     return new ApiResponse(StatusCodes.CREATED, success).send(res);
@@ -59,7 +57,6 @@ export const recordTransaction: ApiHandler = async (req, res, db) => {
         : "Failed to record stock transaction.";
 
     const failure: RecordStockTransactionFailure = {
-      status,
       error: {
         message,
         issues: mapErrorToIssues(error),

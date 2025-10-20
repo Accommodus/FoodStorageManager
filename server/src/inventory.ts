@@ -32,7 +32,6 @@ export const upsertLot: ApiHandler = async (req, res, db) => {
 
   if (!isUpsertInventoryLotRequest(payload)) {
     const failure: UpsertInventoryLotFailure = {
-      status: StatusCodes.BAD_REQUEST,
       error: { message: "Invalid inventory lot payload." },
     };
     return new ApiResponse(StatusCodes.BAD_REQUEST, failure).send(res);
@@ -45,7 +44,6 @@ export const upsertLot: ApiHandler = async (req, res, db) => {
 
     const success: UpsertInventoryLotSuccess = {
       data: { lot: serialized },
-      status,
     };
 
     return new ApiResponse(status, success).send(res);
@@ -55,7 +53,6 @@ export const upsertLot: ApiHandler = async (req, res, db) => {
       error instanceof Error ? error.message : "Failed to upsert inventory lot.";
 
     const failure: UpsertInventoryLotFailure = {
-      status,
       error: {
         message,
         issues: mapErrorToIssues(error),
