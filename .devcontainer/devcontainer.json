@@ -3,7 +3,7 @@
     "dockerComposeFile": "docker-compose.yml",
     "service": "devcontainer",
     "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-    "postCreateCommand": "sudo npm install",
+    "postCreateCommand": "sudo chown -R node:node . && npm install",
     "runServices": [
         "client",
         "server"
