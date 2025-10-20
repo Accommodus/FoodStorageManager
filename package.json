@@ -24,5 +24,8 @@
     "server",
     "client",
     "schema"
-  ]
+  ],
+  "dependencies": {
+    "newman": "^6.2.1"
+  }
 }

@@ -5,6 +5,10 @@ services:
       - ../..:/workspaces:cached
     command: sleep infinity
     working_dir: /workspaces/${localWorkspaceFolderBasename}
+    environment:
+      C_PORT: ${C_PORT}
+      MONGODB_URI: ${MONGODB_URI}
+      S_PORT: ${S_PORT}
     depends_on:
       - client
       - server
@@ -23,8 +27,6 @@ services:
     environment:
       C_PORT: ${C_PORT}
     restart: unless-stopped
-    depends_on: 
-      - db
 
   server:
     image: node:24
@@ -38,20 +40,10 @@ services:
       - "127.0.0.1:${S_PORT}:${S_PORT}"
     environment:
       # App connects to Mongo via Docker DNS, not localhost
-      MONGODB_URI: mongodb://db:27017/local
+      MONGODB_URI: ${MONGODB_URI}
       S_PORT: ${S_PORT}
     restart: unless-stopped
-    depends_on: 
-      - db
-
-  db:
-    image: mongo:latest
-    restart: unless-stopped
-    volumes:
-      - mongodb-data:/data/db
-    command: ["mongod", "--bind_ip_all", "--noauth"]
 
 volumes:
-  mongodb-data:
   client-node-modules:
   server-node-modules:
