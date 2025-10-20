@@ -1,7 +1,8 @@
-import type { ApiRequest, ApiResponse, RequestBody, ResponseData, ResponseError, ResponseStatus } from "./api";
+import type { ApiRequest, ApiResponse, RequestBody, RequestQuery, ResponseData, ResponseError, ResponseStatus } from "./api";
 import type { Item } from "../models/item.model";
 
 type ISODateString = string;
+type ObjectIdString = string;
 
 export type ItemDraft = {
   name: string;
@@ -17,10 +18,21 @@ export type ItemDraft = {
   isActive?: boolean;
 };
 
+export type ItemResource = Omit<
+  Item,
+  "locationId" | "expiresAt" | "createdAt" | "updatedAt"
+> & {
+  _id: ObjectIdString;
+  locationId: ObjectIdString;
+  expiresAt?: ISODateString;
+  createdAt?: ISODateString;
+  updatedAt?: ISODateString;
+};
+
 export type CreateItemRequest = ApiRequest<RequestBody<{ item: ItemDraft }>>;
 
 export type CreateItemSuccess = ApiResponse<
-  ResponseData<{ item: Item }>,
+  ResponseData<{ item: ItemResource }>,
   ResponseStatus<201>
 >;
 
@@ -30,3 +42,19 @@ export type CreateItemFailure = ApiResponse<
 >;
 
 export type CreateItemResponse = CreateItemSuccess | CreateItemFailure;
+
+export type ListItemsRequest = ApiRequest<
+  RequestQuery<{ locationId?: ObjectIdString }>
+>;
+
+export type ListItemsSuccess = ApiResponse<
+  ResponseData<{ items: ItemResource[] }>,
+  ResponseStatus<200>
+>;
+
+export type ListItemsFailure = ApiResponse<
+  ResponseError<{ message: string; issues?: Record<string, unknown> }>,
+  ResponseStatus<400 | 409 | 500>
+>;
+
+export type ListItemsResponse = ListItemsSuccess | ListItemsFailure;
