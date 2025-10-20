@@ -32,7 +32,6 @@ export const createLocation: ApiHandler = async (req, res, db) => {
 
   if (!isCreateLocationRequest(payload)) {
     const failure: CreateLocationFailure = {
-      status: StatusCodes.BAD_REQUEST,
       error: { message: "Invalid location request payload." },
     };
     return new ApiResponse(StatusCodes.BAD_REQUEST, failure).send(res);
@@ -47,7 +46,6 @@ export const createLocation: ApiHandler = async (req, res, db) => {
 
     const success: CreateLocationSuccess = {
       data: { location },
-      status: StatusCodes.CREATED,
     };
 
     return new ApiResponse(StatusCodes.CREATED, success).send(res);
@@ -57,7 +55,6 @@ export const createLocation: ApiHandler = async (req, res, db) => {
       error instanceof Error ? error.message : "Failed to create location.";
 
     const failure: CreateLocationFailure = {
-      status,
       error: {
         message,
         issues: mapErrorToIssues(error),

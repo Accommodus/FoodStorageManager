@@ -48,7 +48,6 @@ export const createUser: ApiHandler = async (req, res, db) => {
 
   if (!isCreateUserRequest(payload)) {
     const failure: CreateUserFailure = {
-      status: StatusCodes.BAD_REQUEST,
       error: { message: "Invalid user request payload." },
     };
     return new ApiResponse(StatusCodes.BAD_REQUEST, failure).send(res);
@@ -60,7 +59,6 @@ export const createUser: ApiHandler = async (req, res, db) => {
 
     const success: CreateUserSuccess = {
       data: { user },
-      status: StatusCodes.CREATED,
     };
 
     return new ApiResponse(StatusCodes.CREATED, success).send(res);
@@ -73,7 +71,6 @@ export const createUser: ApiHandler = async (req, res, db) => {
       error instanceof Error ? error.message : "Failed to create user.";
 
     const failure: CreateUserFailure = {
-      status: normalizedStatus,
       error: {
         message,
         issues: mapErrorToIssues(error),
@@ -96,7 +93,6 @@ export const listUsers: ApiHandler = async (_req, res, db) => {
 
     const success: ListUsersSuccess = {
       data: { users },
-      status: StatusCodes.OK,
     };
 
     return new ApiResponse(StatusCodes.OK, success).send(res);
@@ -105,7 +101,6 @@ export const listUsers: ApiHandler = async (_req, res, db) => {
       error instanceof Error ? error.message : "Failed to fetch users.";
 
     const failure: ListUsersFailure = {
-      status: StatusCodes.INTERNAL_SERVER_ERROR,
       error: { message },
     };
 
