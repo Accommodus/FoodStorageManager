@@ -5,8 +5,10 @@ import {
   type InferSchemaType,
   type Connection,
   type Model,
+  type HydratedDocument,
+  type FilterQuery,
 } from "mongoose";
-import type { ItemDraft } from "../types/item";
+import type { ItemDraft, ItemResource } from "../types/item";
 
 export const ItemSchema = new Schema({
   name: { type: String, required: true, index: true },
@@ -81,4 +83,46 @@ export async function createItemRecord(
   const Item = getItemModel(connection);
   const normalized = normalizeItemDraft(draft);
   return Item.create(normalized);
+}
+
+export function serializeItem(
+  document: HydratedDocument<Item>
+): ItemResource {
+  const plain = document.toObject() as Item & {
+    _id: Types.ObjectId;
+    createdAt?: Date;
+    updatedAt?: Date;
+  };
+
+  return {
+    _id: plain._id.toString(),
+    name: plain.name,
+    upc: plain.upc ?? undefined,
+    category: plain.category ?? undefined,
+    tags: plain.tags ?? undefined,
+    unit: plain.unit ?? undefined,
+    caseSize: plain.caseSize ?? undefined,
+    expiresAt: plain.expiresAt ? plain.expiresAt.toISOString() : undefined,
+    shelfLifeDays: plain.shelfLifeDays ?? undefined,
+    locationId: plain.locationId.toString(),
+    allergens: plain.allergens ?? undefined,
+    isActive: plain.isActive ?? undefined,
+    createdAt: plain.createdAt?.toISOString(),
+    updatedAt: plain.updatedAt?.toISOString(),
+  };
+}
+
+export async function listItems(
+  connection: Connection,
+  options: { locationId?: string } = {}
+): Promise<ItemResource[]> {
+  const Item = getItemModel(connection);
+  const filter: FilterQuery<Item> = {};
+
+  if (options.locationId) {
+    filter.locationId = new Types.ObjectId(options.locationId);
+  }
+
+  const documents = await Item.find(filter).sort({ name: 1 }).exec();
+  return documents.map(serializeItem);
 }
