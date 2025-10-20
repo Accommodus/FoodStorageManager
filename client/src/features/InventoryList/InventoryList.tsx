@@ -5,15 +5,10 @@ import type {
     ListItemsResponse,
     ListItemsSuccess,
 } from '@foodstoragemanager/schema';
+import { buildApiUrl } from '../../lib/api';
 import InventoryItem from './InventoryItem';
 
-const API_BASE_URL =
-    typeof import.meta.env.VITE_SERVER_ORIGIN === 'string' &&
-    import.meta.env.VITE_SERVER_ORIGIN.length > 0
-        ? import.meta.env.VITE_SERVER_ORIGIN.replace(/\/$/, '')
-        : '';
-
-const ITEMS_ENDPOINT = `${API_BASE_URL}/items`;
+const ITEMS_ENDPOINT = buildApiUrl('/items');
 
 const isListItemsSuccess = (
     payload: ListItemsResponse
