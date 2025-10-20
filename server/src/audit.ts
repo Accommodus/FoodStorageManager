@@ -32,7 +32,6 @@ export const createAudit: ApiHandler = async (req, res, db) => {
 
   if (!isCreateAuditRequest(payload)) {
     const failure: CreateAuditFailure = {
-      status: StatusCodes.BAD_REQUEST,
       error: { message: "Invalid audit payload." },
     };
     return new ApiResponse(StatusCodes.BAD_REQUEST, failure).send(res);
@@ -44,7 +43,6 @@ export const createAudit: ApiHandler = async (req, res, db) => {
 
     const success: CreateAuditSuccess = {
       data: { audit: serialized },
-      status: StatusCodes.CREATED,
     };
 
     return new ApiResponse(StatusCodes.CREATED, success).send(res);
@@ -54,7 +52,6 @@ export const createAudit: ApiHandler = async (req, res, db) => {
       error instanceof Error ? error.message : "Failed to create audit.";
 
     const failure: CreateAuditFailure = {
-      status,
       error: {
         message,
         issues: mapErrorToIssues(error),

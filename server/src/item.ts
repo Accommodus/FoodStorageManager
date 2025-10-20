@@ -57,7 +57,6 @@ export const createItem: ApiHandler = async (req, res, db) => {
 
   if (!isCreateItemRequest(payload)) {
     const failure: CreateItemFailure = {
-      status: StatusCodes.BAD_REQUEST,
       error: { message: "Invalid item request payload." },
     };
     return new ApiResponse(StatusCodes.BAD_REQUEST, failure).send(res);
@@ -69,7 +68,6 @@ export const createItem: ApiHandler = async (req, res, db) => {
 
     const success: CreateItemSuccess = {
       data: { item },
-      status: StatusCodes.CREATED,
     };
 
     return new ApiResponse(StatusCodes.CREATED, success).send(res);
@@ -78,7 +76,6 @@ export const createItem: ApiHandler = async (req, res, db) => {
     const message =
       error instanceof Error ? error.message : "Failed to create item.";
     const failure: CreateItemFailure = {
-      status,
       error: {
         message,
         issues: mapErrorToIssues(error),
@@ -96,7 +93,6 @@ export const listItems: ApiHandler = async (req, res, db) => {
 
   if (!isListItemsQuery(req.query)) {
     const failure: ListItemsFailure = {
-      status: StatusCodes.BAD_REQUEST,
       error: {
         message: "Invalid query parameters.",
         issues: { query: req.query },
@@ -114,7 +110,6 @@ export const listItems: ApiHandler = async (req, res, db) => {
       !Types.ObjectId.isValid(locationId.trim()))
   ) {
     const failure: ListItemsFailure = {
-      status: StatusCodes.BAD_REQUEST,
       error: {
         message: "Invalid locationId provided.",
         issues: { locationId },
@@ -134,7 +129,6 @@ export const listItems: ApiHandler = async (req, res, db) => {
 
     const success: ListItemsSuccess = {
       data: { items },
-      status: StatusCodes.OK,
     };
 
     return new ApiResponse(StatusCodes.OK, success).send(res);
@@ -144,7 +138,6 @@ export const listItems: ApiHandler = async (req, res, db) => {
       error instanceof Error ? error.message : "Failed to list items.";
 
     const failure: ListItemsFailure = {
-      status,
       error: {
         message,
         issues: mapErrorToIssues(error),
