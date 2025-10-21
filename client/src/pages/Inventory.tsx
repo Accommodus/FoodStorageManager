@@ -7,7 +7,7 @@ import type {
 } from '@foodstoragemanager/schema';
 import { InventoryList } from '@features/InventoryList';
 import { SearchBar } from '@features/ui/SearchBar';
-import { buildApiUrl } from '../lib/api';
+import { buildApiUrl } from '@lib/api';
 
 const ITEMS_ENDPOINT = buildApiUrl('/items');
 
