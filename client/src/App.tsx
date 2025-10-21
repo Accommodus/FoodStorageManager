@@ -1,7 +1,7 @@
-import Inventory from './pages/Inventory.tsx';
+import Login from './pages/Login.tsx';
 
 const App = () => {
-    return <Inventory />;
+    return <Login />;
 };
 
 export default App;
