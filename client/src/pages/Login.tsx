@@ -2,7 +2,7 @@ import { LoginForm } from '@features/LoginForm';
 
 const Login = () => {
     return (
-        <div>
+        <div className="mt-16">
             <LoginForm />
         </div>
     );
