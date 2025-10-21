@@ -14,7 +14,7 @@ type InventoryItemProps = {
 const InventoryItem = ({ item }: InventoryItemProps) => {
     const [selected, setSelected] = useState(false);
 
-    const expiresOn = useMemo(() => {
+    const expiryLabel = useMemo(() => {
         if (!item.expiresAt) {
             return 'No expiry date';
         }
@@ -22,7 +22,7 @@ const InventoryItem = ({ item }: InventoryItemProps) => {
         const candidate = new Date(item.expiresAt);
         return Number.isNaN(candidate.valueOf())
             ? 'No expiry date'
-            : candidate.toLocaleDateString();
+            : 'Expires on: ' + candidate.toLocaleDateString();
     }, [item.expiresAt]);
 
     const quantityLabel = useMemo(() => {
@@ -57,7 +57,7 @@ const InventoryItem = ({ item }: InventoryItemProps) => {
             </div>
             <div className="flex h-auto flex-1 flex-col gap-4 p-4">
                 <span className="bg-primary-200 w-fit rounded-md px-4 py-2 text-sm tracking-wide">
-                    Expires on: {expiresOn}
+                    {expiryLabel}
                 </span>
                 <div>
                     <h4 className="mb-2 font-medium tracking-wide">Tags</h4>
