@@ -52,7 +52,7 @@ const InventoryItem = ({ item }: InventoryItemProps) => {
                     <p className="text-sm">{upcLabel}</p>
                 </div>
             )}
-            <div className="relative flex h-80 w-80 flex-col overflow-hidden rounded-2xl bg-neutral-100 shadow-md">
+            <div className="relative flex w-80 flex-col overflow-hidden rounded-2xl bg-neutral-100 shadow-md">
                 {selected && (
                     <div className="bg-secondary-500 absolute z-10 h-full w-full opacity-20" />
                 )}
@@ -83,13 +83,13 @@ const InventoryItem = ({ item }: InventoryItemProps) => {
                         <h4 className="mb-2 font-medium tracking-wide">Tags</h4>
                         <div className="flex flex-wrap gap-2">
                             {item.tags.map((tag) => (
-                                <span className="rounded-full bg-neutral-400 px-4 py-1 text-sm text-neutral-50">
+                                <span className="rounded-full bg-neutral-400 px-4 py-1 text-xs text-neutral-50">
                                     {tag.charAt(0).toUpperCase() + tag.slice(1)}
                                 </span>
                             ))}
                         </div>
                     </div>
-                    <div className="z-20 mt-auto flex w-full gap-4">
+                    <div className="z-20 mt-4 flex w-full gap-4">
                         <button
                             onClick={() => setSelected((prev) => !prev)}
                             className="z-20 mr-auto"
