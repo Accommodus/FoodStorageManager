@@ -22,6 +22,7 @@ const isListItemsFailure = (
 
 const Inventory = () => {
     const [items, setItems] = useState<ItemResource[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -94,7 +95,7 @@ const Inventory = () => {
             <h1 className="bg-green mb-16 text-5xl font-bold tracking-wide">
                 Inventory
             </h1>
-            <SearchBar />
+            <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
             {isLoading || error ? (
                 error ? (
                     <p className="text-red-600" role="alert">
