@@ -6,6 +6,7 @@ import type {
     ListItemsSuccess,
 } from '@foodstoragemanager/schema';
 import { InventoryList } from '@features/InventoryList';
+import { InventoryFilter } from '@features/InventoryFilter';
 import { SearchBar } from '@features/ui/SearchBar';
 import { buildApiUrl } from '@lib/api';
 
@@ -89,7 +90,7 @@ const Inventory = () => {
     }, []);
 
     return (
-        <div className="p-10">
+        <div className="m-auto w-240">
             <h1 className="bg-green mb-16 text-5xl font-bold tracking-wide">
                 Inventory
             </h1>
@@ -107,6 +108,7 @@ const Inventory = () => {
             ) : (
                 <InventoryList items={items} />
             )}
+            <InventoryFilter />
         </div>
     );
 };
