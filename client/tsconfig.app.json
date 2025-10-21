@@ -28,6 +28,9 @@
         "paths": {
             "@features/*": [
                 "src/features/*"
+            ],
+            "@foodstoragemanager/schema": [
+                "../schema/src"
             ]
         }
     },
