@@ -37,16 +37,6 @@ const InventoryItem = ({ item }: InventoryItemProps) => {
         return category.charAt(0).toUpperCase() + category.slice(1);
     }, [item.category]);
 
-    const metadata = useMemo(() => {
-        const pieces = [
-            item.category ? `Category: ${item.category}` : null,
-            item.tags?.length ? `Tags: ${item.tags.join(', ')}` : null,
-            `Location: ${item.locationId}`,
-        ].filter(Boolean);
-
-        return pieces.join(' • ');
-    }, [item.category, item.tags, item.locationId]);
-
     return (
         <div className="relative flex h-80 w-80 flex-col overflow-hidden rounded-2xl bg-neutral-100 shadow-md">
             {selected ? (
