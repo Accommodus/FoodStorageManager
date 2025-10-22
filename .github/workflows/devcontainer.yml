@@ -1,3 +1,14 @@
+name: Publish Devcontainer Image
+
+on:
+  push:
+    branches:
+      - infra/devcontainer
+  workflow_dispatch: {}
+
+env:
+  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/foodstoragemanager/devcontainer
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -6,11 +17,6 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
-
-      - name: Compute image name (lowercase owner)
-        run: |
-          owner="${GITHUB_REPOSITORY_OWNER,,}"
-          echo "IMAGE=ghcr.io/${owner}/foodstoragemanager/devcontainer" >> "$GITHUB_ENV"
 
       - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
@@ -21,12 +27,12 @@ jobs:
         run: |
           npx -y @devcontainers/cli@0.80.1 build \
             --workspace-folder . \
-            --image-name "${IMAGE}:latest"
+            --image-name "${IMAGE_NAME,,}:latest"
 
       - name: Push :latest
-        run: docker push "${IMAGE}:latest"
+        run: docker push "${IMAGE_NAME,,}:latest"
 
       - name: Tag + push :sha
         run: |
-          docker tag "${IMAGE}:latest" "${IMAGE}:${{ github.sha }}"
-          docker push "${IMAGE}:${{ github.sha }}"
+          docker tag "${IMAGE_NAME,,}:latest" "${IMAGE}:${{ github.sha }}"
+          docker push "${IMAGE_NAME,,}:${{ github.sha }}"
