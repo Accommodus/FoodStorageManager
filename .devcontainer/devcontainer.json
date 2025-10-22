@@ -1,0 +1,30 @@
+{
+    "name": "MERN Secure Dev",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "devcontainer",
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+    "postCreateCommand": "sudo chown -R node:node . && sudo npm install",
+    "runServices": [
+        "client",
+        "server"
+    ],
+    "shutdownAction": "stopCompose",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "remote.autoForwardPorts": false,
+                "remote.forwardOnOpen": false,
+                "editor.formatOnSave": true,
+                "files.exclude": {
+                    "**/node_modules": true
+                }
+            },
+            "extensions": [
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "openai.chatgpt",
+                "mongodb.mongodb-vscode"
+            ]
+        }
+    }
+}
