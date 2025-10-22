@@ -1,14 +1,3 @@
-name: Publish Devcontainer Image
-
-on:
-  push:
-    branches:
-      - infra/devcontainer
-  workflow_dispatch: {}
-
-env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/foodstoragemanager/devcontainer
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -16,10 +5,14 @@ jobs:
       contents: read
       packages: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
+      - name: Compute image name (lowercase owner)
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          echo "IMAGE=ghcr.io/${owner}/foodstoragemanager/devcontainer" >> "$GITHUB_ENV"
+
+      - name: Login to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Build devcontainer image
@@ -28,12 +21,12 @@ jobs:
         run: |
           npx -y @devcontainers/cli@0.80.1 build \
             --workspace-folder . \
-            --image-name "${IMAGE_NAME}:latest"
+            --image-name "${IMAGE}:latest"
 
       - name: Push :latest
-        run: docker push "${IMAGE_NAME}:latest"
+        run: docker push "${IMAGE}:latest"
 
-      - name: Tag + push immutable digest tag (:sha)
+      - name: Tag + push :sha
         run: |
-          docker tag "${IMAGE_NAME}:latest" "${IMAGE_NAME}:${{ github.sha }}"
-          docker push "${IMAGE_NAME}:${{ github.sha }}"
+          docker tag "${IMAGE}:latest" "${IMAGE}:${{ github.sha }}"
+          docker push "${IMAGE}:${{ github.sha }}"
