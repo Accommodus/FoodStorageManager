@@ -7,7 +7,7 @@ on:
   workflow_dispatch: {}
 
 env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/foodstoragemanager/devcontainer
+  IMAGE_NAME: ghcr.io/${{github.repository,,}}/devcontainer
 
 jobs:
   build-and-push:
@@ -27,12 +27,12 @@ jobs:
         run: |
           npx -y @devcontainers/cli@0.80.1 build \
             --workspace-folder . \
-            --image-name "${IMAGE_NAME,,}:latest"
+            --image-name "${IMAGE_NAME}:latest"
 
       - name: Push :latest
-        run: docker push "${IMAGE_NAME,,}:latest"
+        run: docker push "${IMAGE_NAME}:latest"
 
       - name: Tag + push :sha
         run: |
-          docker tag "${IMAGE_NAME,,}:latest" "${IMAGE}:${{ github.sha }}"
-          docker push "${IMAGE_NAME,,}:${{ github.sha }}"
+          docker tag "${IMAGE_NAME}:latest" "${IMAGE}:${{ github.sha }}"
+          docker push "${IMAGE_NAME}:${{ github.sha }}"
