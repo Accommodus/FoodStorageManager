@@ -1,41 +1,50 @@
-name: Publish Devcontainer Image
+#
+name: Create and publish a prebuilt devcontainer
 
-on:
-  push:
-    branches:
-      - infra/devcontainer
-  workflow_dispatch:
+# Configures this workflow to run every time a change is pushed to the branch called `release`.
+on: workflow_dispatch # currently set to dispatch for testing
 
-permissions:
-  contents: read
-  packages: write
+# Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: accommodus/foodstoragemanager/devcontainer
 
+# There is a single job in this workflow. It's configured to run on the latest available version of Ubuntu.
 jobs:
-  build-and-push:
+  build-and-push-image:
     runs-on: ubuntu-latest
+    # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+      #
     steps:
-      - uses: actions/checkout@v4
-
-      - name: lowercase image name
-        run: |
-          repo="${GITHUB_REPOSITORY,,}"
-          echo "IMAGE_NAME=ghcr.io/${repo}/devcontainer" >> "$GITHUB_ENV"
-
-      - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-
-      - name: Build devcontainer image
-        env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-        run: |
-          npx -y @devcontainers/cli@0.80.1 build \
-            --workspace-folder . \
-            --image-name "${IMAGE_NAME}:latest"
-
-      - name: Push :latest
-        run: docker push "${IMAGE_NAME}:latest"
-
-      - name: Tag + push :sha
-        run: |
-          docker tag "${IMAGE_NAME}:latest" "${IMAGE}:${{ github.sha }}"
-          docker push "${IMAGE_NAME}:${{ github.sha }}"
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      # Uses the `docker/login-action` action to log in to the Container registry registry using the account and password that will publish the packages. Once published, the packages are scoped to the account defined here.
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # From https://github.com/devcontainers/ci/blob/main/docs/multi-platform-builds.md
+      - name: Set up QEMU for multi-architecture builds
+        uses: docker/setup-qemu-action@v3
+      - name: Setup Docker buildx for multi-architecture builds
+        uses: docker/setup-buildx-action@v3
+        with:
+          use: true
+      # From https://github.com/devcontainers/ci/blob/main/docs/github-action.md
+      - name: Pre-build dev container image
+        uses: devcontainers/ci@v0.3
+        with:
+            subFolder: src
+            configFile: src/devcontainer.json
+            imageName: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+            cacheFrom: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
+            cacheTo: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
+            push: always
+            platform: linux/amd64,linux/arm64 
