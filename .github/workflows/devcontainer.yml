@@ -37,9 +37,5 @@ jobs:
 
       - name: Tag + push :sha
         run: |
-<<<<<<< HEAD
-          docker tag "${IMAGE_NAME}:latest" "${IMAGE_NAME}:${{ github.sha }}"
-=======
           docker tag "${IMAGE_NAME}:latest" "${IMAGE}:${{ github.sha }}"
->>>>>>> 9687e3fe33b17efa8c146c3663b63b9e6cc57fbb
           docker push "${IMAGE_NAME}:${{ github.sha }}"
