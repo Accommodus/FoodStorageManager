@@ -6,19 +6,22 @@ on:
       - infra/devcontainer
   workflow_dispatch: {}
 
-env:
-  IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/foodstoragemanager/devcontainer
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Login to GHCR
+      - name: lowercase image name
+        run: |
+          repo="${GITHUB_REPOSITORY,,}"
+          echo "IMAGE_NAME=ghcr.io/${repo}/devcontainer" >> "$GITHUB_ENV"
+
+      - name: Log in to GHCR
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Build devcontainer image
@@ -27,12 +30,12 @@ jobs:
         run: |
           npx -y @devcontainers/cli@0.80.1 build \
             --workspace-folder . \
-            --image-name "${IMAGE_NAME,,}:latest"
+            --image-name "${IMAGE_NAME}:latest"
 
       - name: Push :latest
-        run: docker push "${IMAGE_NAME,,}:latest"
+        run: docker push "${IMAGE_NAME}:latest"
 
       - name: Tag + push :sha
         run: |
-          docker tag "${IMAGE_NAME,,}:latest" "${IMAGE}:${{ github.sha }}"
-          docker push "${IMAGE_NAME,,}:${{ github.sha }}"
+          docker tag "${IMAGE_NAME}:latest" "${IMAGE_NAME}:${{ github.sha }}"
+          docker push "${IMAGE_NAME}:${{ github.sha }}"
