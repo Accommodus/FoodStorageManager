@@ -38,6 +38,6 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           imageName: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          cacheFrom: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
-          cacheTo: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
+          #cacheFrom: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
+          #cacheTo: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
           push: always
