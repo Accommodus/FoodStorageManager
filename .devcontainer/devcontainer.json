@@ -4,6 +4,7 @@
     "service": "devcontainer",
     "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
     "onCreateCommand": "npm install",
+    "remoteUser": "root",
     "containerUser": "root",
     "runServices": [
         "client",
