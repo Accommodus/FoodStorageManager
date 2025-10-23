@@ -33,19 +33,11 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      # From https://github.com/devcontainers/ci/blob/main/docs/multi-platform-builds.md
-      - name: Set up QEMU for multi-architecture builds
-        uses: docker/setup-qemu-action@v3
-      - name: Setup Docker buildx for multi-architecture builds
-        uses: docker/setup-buildx-action@v3
-        with:
-          use: true
       # From https://github.com/devcontainers/ci/blob/main/docs/github-action.md
       - name: Pre-build dev container image
         uses: devcontainers/ci@v0.3
         with:
-            imageName: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-            cacheFrom: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
-            cacheTo: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
-            push: always
-            platform: linux/amd64,linux/arm64 
+          imageName: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          cacheFrom: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
+          cacheTo: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:cache
+          push: always
