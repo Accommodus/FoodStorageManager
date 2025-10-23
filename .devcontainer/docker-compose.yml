@@ -1,5 +1,6 @@
 services:
   devcontainer:
+    user: root
     image: mcr.microsoft.com/devcontainers/typescript-node
     volumes:
       - ../..:/workspaces:cached
@@ -15,6 +16,7 @@ services:
       - server
 
   client:
+    user: root
     image: node:24
     working_dir: /workspaces/${localWorkspaceFolderBasename}
     volumes:
@@ -30,6 +32,7 @@ services:
     restart: unless-stopped
 
   server:
+    user: root
     image: node:24
     working_dir: /workspaces/${localWorkspaceFolderBasename}
     volumes:
