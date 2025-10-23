@@ -96,6 +96,7 @@ const Inventory = () => {
                 Inventory
             </h1>
             <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+            <InventoryFilter />
             {isLoading || error ? (
                 error ? (
                     <p className="text-red-600" role="alert">
@@ -109,7 +110,6 @@ const Inventory = () => {
             ) : (
                 <InventoryList items={items} />
             )}
-            <InventoryFilter />
         </div>
     );
 };
