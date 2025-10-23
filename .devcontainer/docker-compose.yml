@@ -16,12 +16,11 @@ services:
 
   client:
     image: node:24
-    working_dir: /workspaces/${localWorkspaceFolderBasename}/client
+    working_dir: /workspaces/${localWorkspaceFolderBasename}
     volumes:
       - ../..:/workspaces:cached
-      - client-node-modules:/workspaces/${localWorkspaceFolderBasename}/client/node_modules
     # Your script should run Vite with --host and the correct port
-    command: sh -lc "npm ci && npm run dev"
+    command: sh -lc "npm install && npm run client"
     # Bind to host loopback only (not exposed to LAN)
     ports:
       - "127.0.0.1:${C_PORT}:${C_PORT}"
@@ -32,11 +31,10 @@ services:
 
   server:
     image: node:24
-    working_dir: /workspaces/${localWorkspaceFolderBasename}/server
+    working_dir: /workspaces/${localWorkspaceFolderBasename}
     volumes:
       - ../..:/workspaces:cached
-      - server-node-modules:/workspaces/${localWorkspaceFolderBasename}/server/node_modules
-    command: sh -lc "npm ci && npm run dev"
+    command: sh -lc "npm install && npm run server"
     # Bind to host loopback only (not exposed to LAN)
     ports:
       - "127.0.0.1:${S_PORT}:${S_PORT}"
@@ -45,7 +43,4 @@ services:
       MONGODB_URI: ${MONGODB_URI}
       S_PORT: ${S_PORT}
     restart: unless-stopped
-
-volumes:
-  client-node-modules:
-  server-node-modules:
+    

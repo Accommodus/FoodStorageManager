@@ -3,7 +3,8 @@
     "dockerComposeFile": "docker-compose.yml",
     "service": "devcontainer",
     "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-    "postCreateCommand": "sudo chown -R node:node . && sudo npm install",
+    "onCreateCommand": "npm install",
+    "containerUser": "root",
     "runServices": [
         "client",
         "server"
@@ -14,10 +15,7 @@
             "settings": {
                 "remote.autoForwardPorts": false,
                 "remote.forwardOnOpen": false,
-                "editor.formatOnSave": true,
-                "files.exclude": {
-                    "**/node_modules": true
-                }
+                "editor.formatOnSave": true
             },
             "extensions": [
                 "dbaeumer.vscode-eslint",
