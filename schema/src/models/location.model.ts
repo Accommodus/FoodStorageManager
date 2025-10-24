@@ -1,11 +1,13 @@
 import {
   Schema,
   model,
+  Types,
   type InferSchemaType,
   type Connection,
   type Model,
+  type HydratedDocument,
 } from "mongoose";
-import type { LocationDraft } from "../types/location";
+import type { LocationDraft, LocationResource } from "../types/location";
 
 const AddressSchema = new Schema(
   {
@@ -89,4 +91,32 @@ export async function createLocationRecord(
   const Location = getLocationModel(connection);
   const normalized = normalizeLocationDraft(draft);
   return Location.create(normalized);
+}
+
+export function serializeLocation(
+  document: HydratedDocument<Location>
+): LocationResource {
+  const plain = document.toObject() as Location & {
+    _id: Types.ObjectId;
+    createdAt?: Date;
+    updatedAt?: Date;
+  };
+
+  return {
+    _id: plain._id.toString(),
+    name: plain.name,
+    type: plain.type,
+    address: plain.address,
+    isActive: plain.isActive ?? undefined,
+    createdAt: plain.createdAt?.toISOString(),
+    updatedAt: plain.updatedAt?.toISOString(),
+  };
+}
+
+export async function listLocations(
+  connection: Connection
+): Promise<LocationResource[]> {
+  const Location = getLocationModel(connection);
+  const documents = await Location.find({}).sort({ name: 1 }).exec();
+  return documents.map(serializeLocation);
 }

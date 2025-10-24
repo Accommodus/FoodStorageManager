@@ -44,10 +44,15 @@ export type {
 export type {
   AddressDraft,
   LocationDraft,
+  LocationResource,
   CreateLocationRequest,
   CreateLocationSuccess,
   CreateLocationFailure,
   CreateLocationResponse,
+  ListLocationsRequest,
+  ListLocationsSuccess,
+  ListLocationsFailure,
+  ListLocationsResponse,
 } from "./location";
 
 export type {

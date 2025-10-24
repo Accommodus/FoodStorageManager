@@ -104,11 +104,7 @@ export const listItems: ApiHandler = async (req, res, db) => {
 
   const locationId = req.query.locationId;
 
-  if (
-    locationId &&
-    (typeof locationId !== "string" ||
-      !Types.ObjectId.isValid(locationId.trim()))
-  ) {
+  if (locationId && typeof locationId !== "string") {
     const failure: ListItemsFailure = {
       error: {
         message: "Invalid locationId provided.",

@@ -20,10 +20,9 @@ export type ItemDraft = {
 
 export type ItemResource = Omit<
   Item,
-  "locationId" | "expiresAt" | "createdAt" | "updatedAt"
+  "expiresAt" | "createdAt" | "updatedAt"
 > & {
   _id: ObjectIdString;
-  locationId: ObjectIdString;
   expiresAt?: ISODateString;
   createdAt?: ISODateString;
   updatedAt?: ISODateString;

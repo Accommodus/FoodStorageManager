@@ -39,3 +39,26 @@ export type CreateLocationFailure = ApiResponse<
 export type CreateLocationResponse =
   | CreateLocationSuccess
   | CreateLocationFailure;
+
+export type LocationResource = Omit<
+  Location,
+  "createdAt" | "updatedAt"
+> & {
+  _id: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type ListLocationsRequest = ApiRequest<{}>;
+
+export type ListLocationsSuccess = ApiResponse<
+  ResponseData<{ locations: LocationResource[] }>,
+  ResponseStatus<200>
+>;
+
+export type ListLocationsFailure = ApiResponse<
+  ResponseError<{ message: string; issues?: Record<string, unknown> }>,
+  ResponseStatus<400 | 500>
+>;
+
+export type ListLocationsResponse = ListLocationsSuccess | ListLocationsFailure;

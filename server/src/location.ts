@@ -2,9 +2,14 @@ import { StatusCodes } from "http-status-codes";
 import { ApiHandler, ApiResponse } from "./types.js";
 import {
   createLocationRecord,
+  listLocations as listLocationRecords,
+  serializeLocation,
   type CreateLocationFailure,
   type CreateLocationRequest,
   type CreateLocationSuccess,
+  type ListLocationsRequest,
+  type ListLocationsFailure,
+  type ListLocationsSuccess,
 } from "@foodstoragemanager/schema";
 import { mapErrorToIssues, mapErrorToStatus } from "./error-utils.js";
 
@@ -42,7 +47,7 @@ export const createLocation: ApiHandler = async (req, res, db) => {
       db,
       payload.body.location
     );
-    const location = createdLocation.toObject();
+    const location = serializeLocation(createdLocation);
 
     const success: CreateLocationSuccess = {
       data: { location },
@@ -55,6 +60,35 @@ export const createLocation: ApiHandler = async (req, res, db) => {
       error instanceof Error ? error.message : "Failed to create location.";
 
     const failure: CreateLocationFailure = {
+      error: {
+        message,
+        issues: mapErrorToIssues(error),
+      },
+    };
+
+    return new ApiResponse(status, failure).send(res);
+  }
+};
+
+export const listLocations: ApiHandler = async (req, res, db) => {
+  if (db.readyState !== 1) {
+    return res.redirect("/health");
+  }
+
+  try {
+    const locations = await listLocationRecords(db);
+
+    const success: ListLocationsSuccess = {
+      data: { locations },
+    };
+
+    return new ApiResponse(StatusCodes.OK, success).send(res);
+  } catch (error) {
+    const status = mapErrorToStatus(error);
+    const message =
+      error instanceof Error ? error.message : "Failed to list locations.";
+
+    const failure: ListLocationsFailure = {
       error: {
         message,
         issues: mapErrorToIssues(error),

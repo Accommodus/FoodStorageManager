@@ -19,7 +19,7 @@ export const ItemSchema = new Schema({
   caseSize: Number,                               // units per case (optional)
   expiresAt: { type: Date, index: true },
   shelfLifeDays: Number,                          // default expiry assist
-  locationId: { type: Schema.Types.ObjectId, ref: "Location", index: true, required: true },
+  locationId: { type: String, required: true },
   allergens: [String],
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
@@ -35,17 +35,8 @@ export function normalizeItemDraft(draft: ItemDraft) {
     throw new Error("Item name is required.");
   }
 
-  if (!draft.locationId) {
+  if (!draft.locationId?.trim()) {
     throw new Error("Item locationId is required.");
-  }
-
-  const locationIdCandidate = draft.locationId;
-  const locationId = Types.ObjectId.isValid(locationIdCandidate)
-    ? new Types.ObjectId(locationIdCandidate)
-    : undefined;
-
-  if (!locationId) {
-    throw new Error("locationId must be a valid ObjectId.");
   }
 
   const expiresAt =
@@ -59,7 +50,7 @@ export function normalizeItemDraft(draft: ItemDraft) {
 
   return {
     ...draft,
-    locationId,
+    locationId: draft.locationId.trim(),
     ...(expiresAt ? { expiresAt } : {}),
     name: draft.name.trim(),
     upc: draft.upc?.trim(),
@@ -104,7 +95,7 @@ export function serializeItem(
     caseSize: plain.caseSize ?? undefined,
     expiresAt: plain.expiresAt ? plain.expiresAt.toISOString() : undefined,
     shelfLifeDays: plain.shelfLifeDays ?? undefined,
-    locationId: plain.locationId.toString(),
+    locationId: plain.locationId,
     allergens: plain.allergens ?? undefined,
     isActive: plain.isActive ?? undefined,
     createdAt: plain.createdAt?.toISOString(),
@@ -120,7 +111,7 @@ export async function listItems(
   const filter: FilterQuery<Item> = {};
 
   if (options.locationId) {
-    filter.locationId = new Types.ObjectId(options.locationId);
+    filter.locationId = options.locationId;
   }
 
   const documents = await Item.find(filter).sort({ name: 1 }).exec();
