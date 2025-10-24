@@ -36,6 +36,8 @@ jobs:
       # From https://github.com/devcontainers/ci/blob/main/docs/github-action.md
       - name: Pre-build dev container image
         uses: devcontainers/ci@v0.3
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
         with:
           imageName: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           push: always
