@@ -1,21 +1,22 @@
 {
     "name": "MERN Secure Dev",
-    "dockerComposeFile": "docker-compose.yml",
-    "service": "devcontainer",
-    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+    "image": "mcr.microsoft.com/devcontainers/typescript-node",
     "onCreateCommand": "npm install",
+    "postCreateCommand": "npm run dev",
     "remoteUser": "root",
     "containerUser": "root",
-    "runServices": [
-        "client",
-        "server"
+    "forwardPorts": [
+        5173,
+        3000
     ],
-    "shutdownAction": "stopCompose",
+    "containerEnv": {
+        "MONGODB_URI": "${localEnv:MONGODB_URI}",
+        "C_PORT": "5173",
+        "S_PORT": "3000"
+    },
     "customizations": {
         "vscode": {
             "settings": {
-                "remote.autoForwardPorts": false,
-                "remote.forwardOnOpen": false,
                 "editor.formatOnSave": true
             },
             "extensions": [
