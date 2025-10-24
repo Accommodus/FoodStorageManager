@@ -42,6 +42,10 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
 
+    // Store raw string values for tags and allergens to allow typing commas
+    const [tagsInput, setTagsInput] = useState('');
+    const [allergensInput, setAllergensInput] = useState('');
+
 
     const handleInputChange = (field: keyof ItemDraft, value: string | number | boolean | string[]) => {
         setFormData(prev => ({
@@ -51,17 +55,31 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
     };
 
     const handleTagsChange = (value: string) => {
-        const tags = value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-        handleInputChange('tags', tags);
+        setTagsInput(value);
+        // Only process when user finishes typing (on blur) or submits
     };
 
     const handleAllergensChange = (value: string) => {
-        const allergens = value.split(',').map(allergen => allergen.trim()).filter(allergen => allergen.length > 0);
-        handleInputChange('allergens', allergens);
+        setAllergensInput(value);
+        // Only process when user finishes typing (on blur) or submits
+    };
+
+    const processTagsAndAllergens = () => {
+        const tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+        const allergens = allergensInput.split(',').map(allergen => allergen.trim()).filter(allergen => allergen.length > 0);
+        
+        setFormData(prev => ({
+            ...prev,
+            tags,
+            allergens
+        }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        
+        // Process tags and allergens before submitting
+        processTagsAndAllergens();
         
         if (!formData.name.trim() || !formData.locationId) {
             setError('Name and location are required');
@@ -283,8 +301,9 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
                     <input
                         type="text"
                         id="tags"
-                        value={formData.tags?.join(', ') || ''}
+                        value={tagsInput}
                         onChange={(e) => handleTagsChange(e.target.value)}
+                        onBlur={processTagsAndAllergens}
                         placeholder="e.g., gluten-free, organic, shelf-stable"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -299,8 +318,9 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
                     <input
                         type="text"
                         id="allergens"
-                        value={formData.allergens?.join(', ') || ''}
+                        value={allergensInput}
                         onChange={(e) => handleAllergensChange(e.target.value)}
+                        onBlur={processTagsAndAllergens}
                         placeholder="e.g., nuts, dairy, gluten"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
