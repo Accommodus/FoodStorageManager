@@ -10,7 +10,7 @@
         3000
     ],
     "containerEnv": {
-        "MONGODB_URI": "${localEnv:MONGODB_URI}",
+        "MONGODB_URI": "mongodb+srv://devcontainer:3UkD96zbEc1k4Jx0@cluster0.pomhoky.mongodb.net/garden?retryWrites=true&w=majority&appName=Cluster0",
         "C_PORT": "5173",
         "S_PORT": "3000"
     },
