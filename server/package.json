@@ -8,8 +8,9 @@
     "http-status-codes": "^2.3.0"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "tsx src/index.ts"
+    "build:scheme": "cd ../schema && npm run build",
+    "build": "npm run build:scheme && tsc -p tsconfig.json",
+    "dev": "npm run build:scheme && tsx src/index.ts"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
