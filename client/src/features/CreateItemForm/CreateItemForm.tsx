@@ -1,22 +1,6 @@
 import { useState } from 'react';
-import type {
-    ItemDraft,
-    CreateItemRequest,
-    CreateItemResponse,
-    CreateItemSuccess,
-    CreateItemFailure,
-} from '@foodstoragemanager/schema';
-import { buildApiUrl } from '../../lib/api';
-
-const ITEMS_ENDPOINT = buildApiUrl('/items');
-
-const isCreateItemSuccess = (
-    payload: CreateItemResponse
-): payload is CreateItemSuccess => 'data' in payload && 'item' in payload.data;
-
-const isCreateItemFailure = (
-    payload: CreateItemResponse
-): payload is CreateItemFailure => 'error' in payload;
+import type { ItemDraft, CreateItemResponse } from '@foodstoragemanager/schema';
+import { getSchemaClient } from '@lib/schemaClient';
 
 interface CreateItemFormProps {
     onItemCreated?: () => void;
@@ -47,7 +31,10 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
     const [allergensInput, setAllergensInput] = useState('');
 
 
-    const handleInputChange = (field: keyof ItemDraft, value: string | number | boolean | string[]) => {
+    const handleInputChange = (
+        field: keyof ItemDraft,
+        value: string | number | boolean | string[] | undefined
+    ) => {
         setFormData(prev => ({
             ...prev,
             [field]: value,
@@ -64,24 +51,29 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
         // Only process when user finishes typing (on blur) or submits
     };
 
-    const processTagsAndAllergens = () => {
-        const tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-        const allergens = allergensInput.split(',').map(allergen => allergen.trim()).filter(allergen => allergen.length > 0);
-        
-        setFormData(prev => ({
-            ...prev,
-            tags,
-            allergens
-        }));
-    };
-
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
-        // Process tags and allergens before submitting
-        processTagsAndAllergens();
-        
-        if (!formData.name.trim() || !formData.locationId) {
+
+        const tags = tagsInput
+            .split(',')
+            .map(tag => tag.trim())
+            .filter(tag => tag.length > 0);
+        const allergens = allergensInput
+            .split(',')
+            .map(allergen => allergen.trim())
+            .filter(allergen => allergen.length > 0);
+
+        const preparedDraft: ItemDraft = {
+            ...formData,
+            locationId: formData.locationId.trim(),
+            tags,
+            allergens,
+            name: formData.name.trim(),
+            upc: formData.upc?.trim() || undefined,
+            category: formData.category?.trim() || undefined,
+        };
+
+        if (!preparedDraft.name || !preparedDraft.locationId) {
             setError('Name and location are required');
             return;
         }
@@ -89,59 +81,39 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
         try {
             setIsSubmitting(true);
             setError(null);
+            setSuccess(null);
 
-            const requestBody: CreateItemRequest = {
-                body: {
-                    item: {
-                        ...formData,
-                        name: formData.name.trim(),
-                        upc: formData.upc?.trim() || undefined,
-                        category: formData.category?.trim() || undefined,
-                    },
-                },
-            };
+            const client = getSchemaClient();
+            const payload: CreateItemResponse = await client.createItem(preparedDraft);
 
-            const response = await fetch(ITEMS_ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(requestBody),
-            });
-
-            const payload = (await response.json()) as CreateItemResponse;
-
-            if (!response.ok || isCreateItemFailure(payload)) {
-                const message = isCreateItemFailure(payload)
-                    ? payload.error.message
-                    : `Failed to create item (status ${response.status})`;
-                const issues = isCreateItemFailure(payload) && payload.error.issues
+            if ('error' in payload) {
+                const issues = payload.error.issues
                     ? ` Details: ${JSON.stringify(payload.error.issues)}`
                     : '';
-                throw new Error(`${message}${issues}`);
+                throw new Error(`${payload.error.message}${issues}`);
             }
 
-            if (isCreateItemSuccess(payload)) {
-                setSuccess('Item created successfully!');
-                setFormData({
-                    name: '',
-                    locationId: '',
-                    upc: '',
-                    category: '',
-                    tags: [],
-                    unit: 'ea',
-                    caseSize: undefined,
-                    expiresAt: undefined,
-                    shelfLifeDays: undefined,
-                    allergens: [],
-                    isActive: true,
-                });
-                
-                // Call the callback after a short delay to show success message
-                setTimeout(() => {
-                    onItemCreated?.();
-                }, 1500);
-            }
+            setSuccess('Item created successfully!');
+            setFormData({
+                name: '',
+                locationId: '',
+                upc: '',
+                category: '',
+                tags: [],
+                unit: 'ea',
+                caseSize: undefined,
+                expiresAt: undefined,
+                shelfLifeDays: undefined,
+                allergens: [],
+                isActive: true,
+            });
+            setTagsInput('');
+            setAllergensInput('');
+
+            // Call the callback after a short delay to show success message
+            setTimeout(() => {
+                onItemCreated?.();
+            }, 1500);
         } catch (caughtError) {
             const message = caughtError instanceof Error ? caughtError.message : 'Failed to create item';
             setError(message);
@@ -258,7 +230,7 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
                         type="number"
                         id="caseSize"
                         value={formData.caseSize || ''}
-                        onChange={(e) => handleInputChange('caseSize', e.target.value ? parseInt(e.target.value) : 0)}
+                        onChange={(e) => handleInputChange('caseSize', e.target.value ? parseInt(e.target.value, 10) : undefined)}
                         min="1"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -273,7 +245,7 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
                         type="number"
                         id="shelfLifeDays"
                         value={formData.shelfLifeDays || ''}
-                        onChange={(e) => handleInputChange('shelfLifeDays', e.target.value ? parseInt(e.target.value) : 0)}
+                        onChange={(e) => handleInputChange('shelfLifeDays', e.target.value ? parseInt(e.target.value, 10) : undefined)}
                         min="1"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -288,7 +260,7 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
                         type="date"
                         id="expiresAt"
                         value={formData.expiresAt ? formData.expiresAt.split('T')[0] : ''}
-                        onChange={(e) => handleInputChange('expiresAt', e.target.value ? new Date(e.target.value).toISOString() : '')}
+                        onChange={(e) => handleInputChange('expiresAt', e.target.value ? new Date(e.target.value).toISOString() : undefined)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
@@ -303,7 +275,6 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
                         id="tags"
                         value={tagsInput}
                         onChange={(e) => handleTagsChange(e.target.value)}
-                        onBlur={processTagsAndAllergens}
                         placeholder="e.g., gluten-free, organic, shelf-stable"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
@@ -320,7 +291,6 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
                         id="allergens"
                         value={allergensInput}
                         onChange={(e) => handleAllergensChange(e.target.value)}
-                        onBlur={processTagsAndAllergens}
                         placeholder="e.g., nuts, dairy, gluten"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
