@@ -1,2 +1,8 @@
-export * from "./models/index";
-export type * from "./types/index";
+export {
+  createSchemaClient,
+  type ClientInit,
+  type RequestOptions,
+  type SchemaClient,
+} from "./client";
+
+export type * from "./types";

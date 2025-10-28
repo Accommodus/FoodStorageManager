@@ -1,15 +1,19 @@
-import { ApiResponse, ServerHealth } from "./types";
-import { Request, Response } from "express";
+import { StatusCodes } from "http-status-codes";
+import type { Request, Response } from "express";
+import type { ServerHealth } from "./types.js";
+import { sendError, sendSuccess } from "./responses.js";
 
-type HealthData = { healthy: true } | { healthy: false; error: Error };
-
-export function getHealth(_req: Request, res: Response, health: ServerHealth) {
+export function getHealth(
+  _req: Request,
+  res: Response,
+  health: ServerHealth
+) {
   if (health.ok) {
-    new ApiResponse<HealthData>(200, { healthy: true }).send(res);
-  } else {
-    new ApiResponse<HealthData>(503, {
-      healthy: false,
-      error: health.error,
-    }).send(res);
+    return sendSuccess(res, StatusCodes.OK, { healthy: true });
   }
+
+  const message = health.error?.message ?? "Database connection unavailable.";
+  return sendError(res, StatusCodes.SERVICE_UNAVAILABLE, message, {
+    reason: health.error?.name,
+  });
 }
