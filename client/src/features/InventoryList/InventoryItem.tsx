@@ -82,8 +82,11 @@ const InventoryItem = ({ item }: InventoryItemProps) => {
                     <div>
                         <h4 className="mb-2 font-medium tracking-wide">Tags</h4>
                         <div className="flex flex-wrap gap-2">
-                            {item.tags.map((tag) => (
-                                <span className="rounded-full bg-neutral-400 px-4 py-1 text-xs text-neutral-50">
+                            {(item.tags ?? []).map((tag) => (
+                                <span
+                                    key={tag}
+                                    className="rounded-full bg-neutral-400 px-4 py-1 text-xs text-neutral-50"
+                                >
                                     {tag.charAt(0).toUpperCase() + tag.slice(1)}
                                 </span>
                             ))}
