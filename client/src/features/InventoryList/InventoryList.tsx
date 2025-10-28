@@ -1,22 +1,10 @@
 import { useEffect, useState } from 'react';
 import type {
     ItemResource,
-    ListItemsFailure,
     ListItemsResponse,
-    ListItemsSuccess,
 } from '@foodstoragemanager/schema';
-import { buildApiUrl } from '../../lib/api';
 import InventoryItem from './InventoryItem';
-
-const ITEMS_ENDPOINT = buildApiUrl('/items');
-
-const isListItemsSuccess = (
-    payload: ListItemsResponse
-): payload is ListItemsSuccess => 'data' in payload && 'items' in payload.data;
-
-const isListItemsFailure = (
-    payload: ListItemsResponse
-): payload is ListItemsFailure => 'error' in payload;
+import { getSchemaClient } from '../../lib/schemaClient';
 
 export const InventoryList = () => {
     const [items, setItems] = useState<ItemResource[]>([]);
@@ -25,42 +13,30 @@ export const InventoryList = () => {
 
     useEffect(() => {
         const controller = new AbortController();
+        const client = getSchemaClient();
 
         const loadItems = async () => {
             try {
                 setIsLoading(true);
-                const response = await fetch(ITEMS_ENDPOINT, {
-                    signal: controller.signal,
-                });
+                const payload: ListItemsResponse = await client.listItems(
+                    undefined,
+                    { signal: controller.signal }
+                );
 
-                if (response.status === 204) {
-                    setItems([]);
-                    setError(null);
-                    return;
-                }
-
-                const payload = (await response.json()) as ListItemsResponse;
-
-                if (!response.ok || isListItemsFailure(payload)) {
-                    const message = isListItemsFailure(payload)
-                        ? payload.error.message
-                        : `Unable to fetch items (status ${response.status}).`;
+                if ('error' in payload) {
                     const issues =
-                        isListItemsFailure(payload) && payload.error.issues
+                        payload.error.issues !== undefined
                             ? ` Details: ${JSON.stringify(
                                   payload.error.issues
                               )}`
                             : '';
-
-                    setError(`${message}${issues}`);
+                    setError(`${payload.error.message}${issues}`);
                     setItems([]);
                     return;
                 }
 
-                if (isListItemsSuccess(payload)) {
-                    setItems(payload.data.items);
-                    setError(null);
-                }
+                setItems(payload.items ?? []);
+                setError(null);
             } catch (caughtError) {
                 if (
                     caughtError instanceof DOMException &&

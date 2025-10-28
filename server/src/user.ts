@@ -1,111 +1,165 @@
 import { StatusCodes } from "http-status-codes";
-import { ApiHandler, ApiResponse } from "./types.js";
+import type { ApiHandler } from "./types.js";
 import {
-  createUserRecord,
-  getUserModel,
-  type CreateUserFailure,
-  type CreateUserRequest,
-  type CreateUserSuccess,
-  type User,
-  type ApiResponse as SchemaApiResponse,
-  type ResponseData,
-  type ResponseError,
-  type ResponseStatus,
-} from "@foodstoragemanager/schema";
-import { mapErrorToIssues, mapErrorToStatus } from "./error-utils.js";
+  assertSafePayload,
+  isPlainObject,
+  sanitizeString,
+} from "./validation.js";
+import {
+  handleDatabaseError,
+  sendError,
+  sendSuccess,
+} from "./responses.js";
 
-type ListUsersSuccess = SchemaApiResponse<
-  ResponseData<{ users: User[] }>,
-  ResponseStatus<200>
->;
+const COLLECTION = "users";
+const ALLOWED_ROLES = new Set(["admin", "staff", "volunteer"]);
 
-type ListUsersFailure = SchemaApiResponse<
-  ResponseError<{ message: string }>,
-  ResponseStatus<500>
->;
+const toIsoString = (value: unknown) =>
+  value instanceof Date ? value.toISOString() : undefined;
 
-const isCreateUserRequest = (
-  payload: unknown
-): payload is CreateUserRequest => {
-  if (
-    typeof payload !== "object" ||
-    payload === null ||
-    !("body" in payload)
-  ) {
-    return false;
+const sanitizeRoles = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return [] as string[];
   }
 
-  const body = (payload as CreateUserRequest).body;
-  return typeof body === "object" && body !== null && "user" in body;
+  const roles = value
+    .map((entry) =>
+      typeof entry === "string" ? entry.trim().toLowerCase() : undefined
+    )
+    .filter((entry): entry is string => Boolean(entry));
+
+  return roles.filter((role) => ALLOWED_ROLES.has(role));
 };
+
+const serializeUser = (doc: Record<string, unknown>) => ({
+  _id: String(doc._id),
+  email: String(doc.email),
+  name: doc.name ? String(doc.name) : undefined,
+  roles: Array.isArray(doc.roles)
+    ? doc.roles.map((role) => String(role))
+    : [],
+  enabled:
+    typeof doc.enabled === "boolean" ? doc.enabled : undefined,
+  createdAt: doc.createdAt ? toIsoString(doc.createdAt) : undefined,
+});
 
 export const createUser: ApiHandler = async (req, res, db) => {
   if (db.readyState !== 1) {
-    return res.redirect("/health");
+    res.redirect("/health");
+    return;
   }
 
   const payload = req.body;
 
-  if (!isCreateUserRequest(payload)) {
-    const failure: CreateUserFailure = {
-      error: { message: "Invalid user request payload." },
+  try {
+    assertSafePayload(payload);
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Invalid user payload.";
+    return sendError(res, StatusCodes.BAD_REQUEST, message);
+  }
+
+  if (!isPlainObject(payload) || !isPlainObject(payload.user)) {
+    return sendError(
+      res,
+      StatusCodes.BAD_REQUEST,
+      "Invalid user request payload."
+    );
+  }
+
+  const draft = payload.user as Record<string, unknown>;
+
+  let document: Record<string, unknown> | null = null;
+
+  try {
+    const email = sanitizeString(draft.email, "user.email", {
+      required: true,
+      lowercase: true,
+    });
+
+    if (!email) {
+      throw new Error("user.email is required.");
+    }
+
+    const name = sanitizeString(draft.name, "user.name");
+    const passwordHash = sanitizeString(
+      draft.passwordHash,
+      "user.passwordHash",
+      { allowEmpty: true }
+    );
+
+    const roles = sanitizeRoles(draft.roles);
+    const enabled =
+      typeof draft.enabled === "boolean" ? draft.enabled : true;
+
+    const now = new Date();
+
+    document = {
+      email,
+      roles,
+      enabled,
+      createdAt: now,
     };
-    return new ApiResponse(StatusCodes.BAD_REQUEST, failure).send(res);
+
+    if (name) {
+      document.name = name;
+    }
+
+    if (passwordHash) {
+      document.passwordHash = passwordHash;
+    }
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid user payload.";
+    return sendError(res, StatusCodes.BAD_REQUEST, message);
   }
 
   try {
-    const createdUser = await createUserRecord(db, payload.body.user);
-    const user = createdUser.toObject();
+    const prepared = document;
 
-    const success: CreateUserSuccess = {
-      data: { user },
-    };
+    if (!prepared) {
+      throw new Error("Failed to prepare user payload.");
+    }
 
-    return new ApiResponse(StatusCodes.CREATED, success).send(res);
+    const collection = db.collection(COLLECTION);
+    const result = await collection.insertOne(prepared);
+    const created = await collection.findOne({ _id: result.insertedId });
+
+    if (!created) {
+      throw new Error("User could not be retrieved after creation.");
+    }
+
+    return sendSuccess(res, StatusCodes.CREATED, {
+      user: serializeUser(created as Record<string, unknown>),
+    });
   } catch (error) {
-    const status = mapErrorToStatus(error);
-    const normalizedStatus =
-      status === StatusCodes.CONFLICT ? StatusCodes.BAD_REQUEST : status;
-
-    const message =
-      error instanceof Error ? error.message : "Failed to create user.";
-
-    const failure: CreateUserFailure = {
-      error: {
-        message,
-        issues: mapErrorToIssues(error),
-      },
-    };
-
-    return new ApiResponse(normalizedStatus, failure).send(res);
+    return handleDatabaseError(res, error, {
+      fallbackMessage: "Failed to create user.",
+      duplicateMessage: "A user with that email already exists.",
+    });
   }
 };
 
 export const listUsers: ApiHandler = async (_req, res, db) => {
   if (db.readyState !== 1) {
-    return res.redirect("/health");
+    res.redirect("/health");
+    return;
   }
 
   try {
-    const UserModel = getUserModel(db);
-    const userDocuments = await UserModel.find().exec();
-    const users = userDocuments.map((userDoc) => userDoc.toObject());
+    const collection = db.collection(COLLECTION);
+    const documents = await collection.find().sort({ email: 1 }).toArray();
 
-    const success: ListUsersSuccess = {
-      data: { users },
-    };
-
-    return new ApiResponse(StatusCodes.OK, success).send(res);
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Failed to fetch users.";
-
-    const failure: ListUsersFailure = {
-      error: { message },
-    };
-
-    return new ApiResponse(StatusCodes.INTERNAL_SERVER_ERROR, failure).send(
-      res
+    const users = documents.map((doc) =>
+      serializeUser(doc as Record<string, unknown>)
     );
+
+    return sendSuccess(res, StatusCodes.OK, { users });
+  } catch (error) {
+    return handleDatabaseError(res, error, {
+      fallbackMessage: "Failed to fetch users.",
+    });
   }
 };
