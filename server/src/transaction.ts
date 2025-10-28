@@ -16,7 +16,7 @@ import {
   sendSuccess,
 } from "./responses.js";
 
-const COLLECTION = "stocktransactions";
+const COLLECTION = "stockTransations";
 const ALLOWED_TYPES = new Set(["IN", "OUT", "MOVE", "ADJUST"]);
 const ALLOWED_REASONS = new Set([
   "donation",

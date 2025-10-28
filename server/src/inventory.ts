@@ -15,7 +15,7 @@ import {
   sendSuccess,
 } from "./responses.js";
 
-const COLLECTION = "inventorylots";
+const COLLECTION = "iventoryLots";
 
 const toObjectIdString = (value: unknown) =>
   value instanceof Types.ObjectId ? value.toString() : String(value);
