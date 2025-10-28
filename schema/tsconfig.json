@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["src/index.ts", "src/models", "src/types"]
+  "include": ["src/index.ts", "src/client.ts", "src/types.ts"]
 }

@@ -4,7 +4,6 @@ import mongoose from "mongoose";
 import { ApiHandler, ServerHealth } from "./types";
 import { getHealth } from "./health";
 import { createItem, listItems } from "./item";
-import { createLocation } from "./location";
 import { upsertLot } from "./inventory";
 import { recordTransaction } from "./transaction";
 import { createAudit } from "./audit";
@@ -93,7 +92,6 @@ const withDatabase = (handler: ApiHandler) =>
 app.get("/items", withDatabase(listItems));
 app.post("/items", withDatabase(createItem));
 app.post("/item", withDatabase(createItem));
-app.post("/locations", withDatabase(createLocation));
 app.put("/inventory/lots", withDatabase(upsertLot));
 app.post("/stock-transactions", withDatabase(recordTransaction));
 app.post("/audits", withDatabase(createAudit));
