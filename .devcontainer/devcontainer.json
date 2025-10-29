@@ -10,7 +10,6 @@
         3000
     ],
     "containerEnv": {
-        "MONGODB_URI": "${localEnv:MONGODB_URI}",
         "C_PORT": "5173",
         "S_PORT": "3000"
     },

@@ -11,7 +11,6 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: accommodus/foodstoragemanager/devcontainer
-  MONGODB_URI: ${{ secrets.MONGODB_URI }}
 
 # There is a single job in this workflow. It's configured to run on the latest available version of Ubuntu.
 jobs:
@@ -40,4 +39,3 @@ jobs:
         with:
           imageName: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           push: always
-          env: MONGODB_URI
