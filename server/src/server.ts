@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
+import dotenv from "dotenv";
 import { ApiHandler, ServerHealth } from "./types";
 import { getHealth } from "./health";
 import { createItem, listItems } from "./item";
@@ -8,6 +9,8 @@ import { upsertLot } from "./inventory";
 import { recordTransaction } from "./transaction";
 import { createAudit } from "./audit";
 import { createUser, listUsers } from "./user";
+
+dotenv.config({path: "/workspaces/FoodStorageManager/.env"});
 
 function connectDB(uri: string): ServerHealth {
   try {
@@ -80,7 +83,8 @@ app.use((req, res, next) => {
   next();
 });
 
-const withDatabase = (handler: ApiHandler) =>
+const withDatabase =
+  (handler: ApiHandler) =>
   async (req: express.Request, res: express.Response) => {
     if (!db) {
       return getHealth(req, res, connection);
