@@ -1,4 +1,4 @@
-export IMAGE_NAME=ghcr.io/accommodus/foodstoragemanager/devcontainer:latest
-export MONGODB_URI=test
+export MONGODB_URI=testing
 
-devcontainer build --workspace-folder . --image-name $IMAGE_NAME
+devcontainer up --workspace-folder . --skip-post-create
+devcontainer exec --workspace-folder . echo $MONGODB_URI 

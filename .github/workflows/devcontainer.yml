@@ -41,3 +41,4 @@ jobs:
         with:
           imageName: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           push: always
+          env: MONGODB_URI
