@@ -8,6 +8,7 @@ import { upsertLot } from "./inventory";
 import { recordTransaction } from "./transaction";
 import { createAudit } from "./audit";
 import { createUser, listUsers } from "./user";
+import { login } from "./auth";
 
 function connectDB(uri: string): ServerHealth {
   try {
@@ -97,6 +98,7 @@ app.post("/stock-transactions", withDatabase(recordTransaction));
 app.post("/audits", withDatabase(createAudit));
 app.get("/users", withDatabase(listUsers));
 app.post("/users", withDatabase(createUser));
+app.post("/auth/login", login);
 
 const getRegisteredRoutes = () => {
   type RouterLayer = {
