@@ -1,5 +1,5 @@
 {
-    "name": "client",
+    "name": "@foodstoragemanager/client",
     "private": true,
     "version": "0.0.0",
     "type": "module",
@@ -10,11 +10,14 @@
         "preview": "vite preview"
     },
     "dependencies": {
+        "@foodstoragemanager/schema": "*",
         "@tailwindcss/vite": "^4.1.13",
-        "react": "^19.1.1",
+        "react": "^19.2.0",
         "react-dom": "^19.1.1",
+        "react-hook-form": "^7.65.0",
+        "react-icons": "^5.5.0",
         "react-router": "^7.9.4",
-        "tailwindcss": "^4.1.13"
+        "tailwindcss": "^4.1.14"
     },
     "devDependencies": {
         "@eslint/js": "^9.35.0",

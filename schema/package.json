@@ -1,0 +1,28 @@
+{
+  "name": "@foodstoragemanager/schema",
+  "version": "0.1.0",
+  "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build:server": "tsc -p tsconfig.json",
+    "build:types": "tsc -p tsconfig.types.json",
+    "build": "npm run build:server && npm run build:types"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
