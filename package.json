@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
     "client": "cd client && npm run dev",
     "server": "cd server && npm run dev"
   },
@@ -20,13 +18,5 @@
   "bugs": {
     "url": "https://github.com/Accommodus/FoodStorageManager/issues"
   },
-  "homepage": "https://github.com/Accommodus/FoodStorageManager#readme",
-  "workspaces": [
-    "server",
-    "client",
-    "schema"
-  ],
-  "devDependencies": {
-    "concurrently": "^9.2.1"
-  }
+  "homepage": "https://github.com/Accommodus/FoodStorageManager#readme"
 }

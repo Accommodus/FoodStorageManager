@@ -1,1 +1,0 @@
-export { InventoryFilter } from './InventoryFilter';

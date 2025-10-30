@@ -1,4 +1,0 @@
-{
-    "initializeCommand": "docker pull ghcr.io/accommodus/foodstoragemanager/devcontainer:latest",
-    "image": "ghcr.io/accommodus/foodstoragemanager/devcontainer:latest"
-}
