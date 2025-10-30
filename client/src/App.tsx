@@ -1,7 +1,5 @@
-import Login from './pages/Login.tsx';
-
-const App = () => {
-    return <Login />;
-};
+function App() {
+    return <></>;
+}
 
 export default App;
