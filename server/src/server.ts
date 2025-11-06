@@ -1,5 +1,13 @@
+import * as path from "node:path";
+import * as url from "node:url";
 import dotenv from "dotenv";
-dotenv.config({path: "/workspaces/FoodStorageManager/.env"});
+
+const __filename = url.fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({
+  path: path.resolve(__dirname, "../../.env"),
+});
 
 import express from "express";
 import cors from "cors";
