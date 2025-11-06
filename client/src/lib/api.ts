@@ -8,6 +8,31 @@ const normalizeBaseUrl = (rawBaseUrl: string) => {
     return valueWithScheme.replace(/\/$/, '');
 };
 
+const resolveFallbackPort = () => {
+    const envPort =
+        import.meta.env.SERVER_PORT ??
+        import.meta.env.VITE_SERVER_PORT ??
+        import.meta.env.S_PORT;
+
+    const parsed = Number(envPort);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 3000;
+};
+
+const resolveFallbackBaseUrl = () => {
+    if (typeof window === 'undefined') {
+        return '';
+    }
+
+    const hostname = window.location.hostname || 'localhost';
+
+    if (import.meta.env.PROD) {
+        return window.location.origin ?? '';
+    }
+
+    const port = resolveFallbackPort();
+    return `http://${hostname}:${port}`;
+};
+
 export const getApiBaseUrl = () => {
     if (cachedApiBaseUrl !== null) {
         return cachedApiBaseUrl;
@@ -20,7 +45,9 @@ export const getApiBaseUrl = () => {
             : '';
 
     cachedApiBaseUrl =
-        rawBaseUrl.length > 0 ? normalizeBaseUrl(rawBaseUrl) : '';
+        rawBaseUrl.length > 0
+            ? normalizeBaseUrl(rawBaseUrl)
+            : resolveFallbackBaseUrl();
 
     return cachedApiBaseUrl;
 };
