@@ -1,7 +1,9 @@
+import dotenv from "dotenv";
+dotenv.config({path: "/workspaces/FoodStorageManager/.env"});
+
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import dotenv from "dotenv";
 import { ApiHandler, ServerHealth } from "./types";
 import { getHealth } from "./health";
 import { createItem, listItems } from "./item";
@@ -10,8 +12,6 @@ import { recordTransaction } from "./transaction";
 import { createAudit } from "./audit";
 import { createUser, listUsers } from "./user";
 import { login } from "./auth";
-
-dotenv.config({path: "/workspaces/FoodStorageManager/.env"});
 
 function connectDB(uri: string): ServerHealth {
   try {
