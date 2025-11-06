@@ -12,7 +12,7 @@ Start the development server and access the website at:
 To push or pull Docker images from GitHub’s container registry (`ghcr.io`), follow these steps:
 
 1. **Generate a Personal Access Token (PAT)**
-   [Create a classic PAT](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic) with the `read:packages` and `write:packages` scopes.
+   [Create a classic PAT](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic) with the `read:packages` scopes.
 
 2. **Authenticate with Docker**
    Replace `<USERNAME>` and `<PAT>` with your credentials:
