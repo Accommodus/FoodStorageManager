@@ -16,6 +16,7 @@ const App = () => {
                     />
                     <Route path="inventory" element={<Inventory />} />
                 </Route>
+                <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
         </BrowserRouter>
     );
