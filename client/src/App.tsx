@@ -1,8 +1,7 @@
-//import Login from './pages/Login.tsx';
-import Inventory from './pages/Inventory.tsx';
+import CreateUser from './pages/CreateUser';
 
 const App = () => {
-    return <Inventory />;
+    return <CreateUser />;
 };
 
 export default App;
