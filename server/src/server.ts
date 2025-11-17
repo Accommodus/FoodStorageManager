@@ -19,7 +19,8 @@ import { createItem, listItems } from "./item";
 import { upsertLot } from "./inventory";
 import { recordTransaction } from "./transaction";
 import { createAudit } from "./audit";
-import { createUser, listUsers } from "./user";
+//import { createUser, listUsers } from "./user";
+import { createUser } from "./createUser";
 
 function connectDB(uri: string): ServerHealth {
   try {
@@ -108,8 +109,11 @@ app.post("/item", withDatabase(createItem));
 app.put("/inventory/lots", withDatabase(upsertLot));
 app.post("/stock-transactions", withDatabase(recordTransaction));
 app.post("/audits", withDatabase(createAudit));
-app.get("/users", withDatabase(listUsers));
-app.post("/users", withDatabase(createUser));
+// Below seems to also create users with the file user.ts?
+// Not sure if not using that breaks anything...
+//app.get("/users", withDatabase(listUsers));
+//app.post("/users", withDatabase(createUser));
+app.post("/createUser", withDatabase(createUser));
 
 const getRegisteredRoutes = () => {
   type RouterLayer = {

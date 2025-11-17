@@ -1,7 +1,9 @@
 import { CreateUserForm } from '@features/CreateUserForm';
-import { useState, useEffect } from 'react';
+//import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const CreateUser = () => {
+    /*
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -16,15 +18,37 @@ const CreateUser = () => {
                 confirmPassword
         );
     }, [email, password, confirmPassword]);
+    */
 
-    const handleSubmit = (data: {
+    const handleSubmit = async (data: {
         email: string;
         password: string;
         confirmPassword: string;
     }) => {
-        setEmail(data.email);
-        setPassword(data.password);
-        setConfirmPassword(data.confirmPassword);
+        if (data.password !== data.confirmPassword) {
+            alert("Passwords do not match!");
+            return;
+        }
+
+        try {
+            const response = await axios.post("http://localhost:3000/createUser", {
+                email: data.email,
+                password: data.password,
+                name: "Default Name",
+            });
+
+            alert("User created successfully!");
+            console.log(response.data);
+        } catch (error: unknown) {
+        
+        if (axios.isAxiosError(error)) {
+            alert(error.response?.data?.message || "Failed to create user");
+            console.error(error.response?.data);
+        } else {
+            console.error(error);
+            alert("Failed to create user");
+        }
+    }
     };
 
     return (
