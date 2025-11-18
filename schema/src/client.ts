@@ -13,9 +13,11 @@ import {
   type ListUsersResponse,
   type LocationDraft,
   type LocationResource,
+  type ObjectIdString,
   type RecordStockTransactionResponse,
   type StockTransactionDraft,
   type StockTransactionResource,
+  type UpdateItemResponse,
   type UpsertInventoryLotResponse,
   type UserDraft,
   type UserResource,
@@ -165,6 +167,11 @@ export interface SchemaClient {
     item: ItemDraft,
     options?: RequestOptions
   ): Promise<CreateItemResponse>;
+  updateItem(
+    itemId: ObjectIdString,
+    item: ItemDraft,
+    options?: RequestOptions
+  ): Promise<UpdateItemResponse>;
   createLocation(
     location: LocationDraft,
     options?: RequestOptions
@@ -290,6 +297,34 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
     createItem: async (item, options) => {
       const { response, body } = await request("/items", {
         method: "POST",
+        signal: options?.signal,
+        headers: mergeHeaders(
+          { "Content-Type": JSON_MEDIA_TYPE },
+          options?.headers
+        ),
+        body: toJsonBody({ item }),
+      });
+
+      if (response.ok) {
+        const payload = asObject(body);
+
+        if (isErrorEnvelope(payload)) {
+          return handleFailure(body, response);
+        }
+
+        if (payload && payload.item) {
+          return { item: payload.item as ItemResource };
+        }
+
+        return handleFailure(body, response);
+      }
+
+      return handleFailure(body, response);
+    },
+
+    updateItem: async (itemId, item, options) => {
+      const { response, body } = await request(`/items/${itemId}`, {
+        method: "PUT",
         signal: options?.signal,
         headers: mergeHeaders(
           { "Content-Type": JSON_MEDIA_TYPE },

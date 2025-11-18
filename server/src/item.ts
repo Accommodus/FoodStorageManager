@@ -264,3 +264,164 @@ export const listItems: ApiHandler = async (req, res, db) => {
     });
   }
 };
+
+export const updateItem: ApiHandler = async (req, res, db) => {
+  if (db.readyState !== 1) {
+    res.redirect("/health");
+    return;
+  }
+
+  const itemId = req.params.id;
+  const payload = req.body;
+
+  try {
+    assertSafePayload(payload);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid item payload.";
+    return sendError(res, StatusCodes.BAD_REQUEST, message);
+  }
+
+  if (!isPlainObject(payload) || !isPlainObject(payload.item)) {
+    return sendError(
+      res,
+      StatusCodes.BAD_REQUEST,
+      "Invalid item request payload."
+    );
+  }
+
+  let itemObjectId: Types.ObjectId;
+  try {
+    itemObjectId = sanitizeObjectId(itemId, "params.id");
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid item ID.";
+    return sendError(res, StatusCodes.BAD_REQUEST, message);
+  }
+
+  // Debug: Log the item ID for troubleshooting
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Updating item with ID:", itemId, "converted to ObjectId:", itemObjectId.toString());
+  }
+
+  const draft = payload.item as Record<string, unknown>;
+
+  let updateDocument: Record<string, unknown> = {
+    updatedAt: new Date(),
+  };
+
+  try {
+    const name = sanitizeString(draft.name, "item.name", {
+      required: true,
+    });
+    if (!name) {
+      throw new Error("item.name is required.");
+    }
+    updateDocument.name = name;
+
+    const unit = sanitizeString(draft.unit, "item.unit") ?? "ea";
+    updateDocument.unit = unit;
+
+    if (typeof draft.isActive === "boolean") {
+      updateDocument.isActive = draft.isActive;
+    }
+
+    const upc = sanitizeString(draft.upc, "item.upc");
+    if (upc) {
+      updateDocument.upc = upc;
+    }
+
+    const category = sanitizeString(draft.category, "item.category");
+    if (category) {
+      updateDocument.category = category;
+    }
+
+    const note = sanitizeString(draft.note, "item.note");
+    if (note) {
+      updateDocument.note = note;
+    }
+
+    const tags = sanitizeStringArray(draft.tags, "item.tags");
+    if (tags !== undefined) {
+      updateDocument.tags = tags;
+    }
+
+    const allergens = sanitizeStringArray(draft.allergens, "item.allergens");
+    if (allergens !== undefined) {
+      updateDocument.allergens = allergens;
+    }
+
+    if (draft.caseSize !== undefined) {
+      const caseSize = sanitizeNumber(
+        draft.caseSize,
+        "item.caseSize",
+        { min: 0 }
+      );
+      if (caseSize !== undefined) {
+        updateDocument.caseSize = caseSize;
+      }
+    }
+
+    if (draft.shelfLifeDays !== undefined) {
+      const shelfLifeDays = sanitizeNumber(
+        draft.shelfLifeDays,
+        "item.shelfLifeDays",
+        { min: 0 }
+      );
+      if (shelfLifeDays !== undefined) {
+        updateDocument.shelfLifeDays = shelfLifeDays;
+      }
+    }
+
+    const expiresAt = sanitizeOptionalDate(draft.expiresAt, "item.expiresAt");
+    if (expiresAt !== undefined) {
+      updateDocument.expiresAt = expiresAt;
+    }
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid item payload.";
+    return sendError(res, StatusCodes.BAD_REQUEST, message);
+  }
+
+  try {
+    const collection = db.collection(COLLECTION);
+    
+    // First check if item exists
+    const existingItem = await collection.findOne({ _id: itemObjectId });
+    if (!existingItem) {
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Item not found. Searched with ObjectId:", itemObjectId.toString(), "original ID:", itemId);
+      }
+      return sendError(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Item not found."
+      );
+    }
+
+    await collection.findOneAndUpdate(
+      { _id: itemObjectId },
+      { $set: updateDocument },
+      { returnDocument: "after" }
+    );
+
+    // Fetch the updated item to ensure we have the latest data
+    const updatedItem = await collection.findOne({ _id: itemObjectId });
+
+    if (!updatedItem) {
+      return sendError(
+        res,
+        StatusCodes.INTERNAL_SERVER_ERROR,
+        "Item could not be retrieved after update."
+      );
+    }
+
+    return sendSuccess(res, StatusCodes.OK, {
+      item: serializeItem(updatedItem as Record<string, unknown>),
+    });
+  } catch (error) {
+    return handleDatabaseError(res, error, {
+      fallbackMessage: "Failed to update item.",
+    });
+  }
+};

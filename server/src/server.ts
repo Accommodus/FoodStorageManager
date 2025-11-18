@@ -15,7 +15,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import { ApiHandler, ServerHealth } from "./types";
 import { getHealth } from "./health";
-import { createItem, listItems } from "./item";
+import { createItem, listItems, updateItem } from "./item";
 import { upsertLot } from "./inventory";
 import { recordTransaction } from "./transaction";
 import { createAudit } from "./audit";
@@ -105,6 +105,7 @@ const withDatabase =
 app.get("/items", withDatabase(listItems));
 app.post("/items", withDatabase(createItem));
 app.post("/item", withDatabase(createItem));
+app.put("/items/:id", withDatabase(updateItem));
 app.put("/inventory/lots", withDatabase(upsertLot));
 app.post("/stock-transactions", withDatabase(recordTransaction));
 app.post("/audits", withDatabase(createAudit));
