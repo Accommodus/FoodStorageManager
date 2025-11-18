@@ -10,9 +10,10 @@ import type { ItemResource } from '@foodstoragemanager/schema';
 
 type InventoryItemProps = {
     item: ItemResource;
+    onEdit?: (item: ItemResource) => void;
 };
 
-const InventoryItem = ({ item }: InventoryItemProps) => {
+const InventoryItem = ({ item, onEdit }: InventoryItemProps) => {
     const [selected, setSelected] = useState(false);
     const [infoOpen, setInfoOpen] = useState(false);
 
@@ -54,7 +55,7 @@ const InventoryItem = ({ item }: InventoryItemProps) => {
             )}
             <div className="relative flex w-80 flex-col overflow-hidden rounded-2xl bg-neutral-100 shadow-md">
                 {selected && (
-                    <div className="bg-secondary-500 absolute z-10 h-full w-full opacity-20" />
+                    <div className="bg-secondary-500 absolute z-10 h-full w-full opacity-20" style={{ pointerEvents: 'none' }} />
                 )}
                 <div className="bg-neutral-150 relative h-24 content-center">
                     <div className="absolute -bottom-2 flex w-full justify-between p-4">
@@ -92,10 +93,10 @@ const InventoryItem = ({ item }: InventoryItemProps) => {
                             ))}
                         </div>
                     </div>
-                    <div className="z-20 mt-4 flex w-full gap-4">
+                    <div className="relative z-30 mt-4 flex w-full gap-4">
                         <button
                             onClick={() => setSelected((prev) => !prev)}
-                            className="z-20 mr-auto"
+                            className="relative z-30 mr-auto"
                             aria-pressed={selected}
                             aria-label={
                                 selected
@@ -109,10 +110,19 @@ const InventoryItem = ({ item }: InventoryItemProps) => {
                                 <BiCheckbox className="size-8 text-neutral-700" />
                             )}
                         </button>
-                        <button aria-label="Move inventory item">
+                        <button aria-label="Move inventory item" className="relative z-30">
                             <BiSolidTruck className="size-8 text-neutral-400" />
                         </button>
-                        <button aria-label="Edit inventory item">
+                        <button 
+                            type="button"
+                            aria-label="Edit inventory item"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onEdit?.(item);
+                            }}
+                            className="relative z-30 cursor-pointer"
+                        >
                             <BiSolidPencil className="text-accent-500 size-8" />
                         </button>
                     </div>
