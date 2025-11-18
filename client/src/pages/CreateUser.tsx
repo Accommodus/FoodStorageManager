@@ -35,9 +35,7 @@ const CreateUser = () => {
             const response = await axios.post("http://localhost:3000/createUser", {
                 email: data.email,
                 password: data.password,
-                // Currently uses a default name
-                // Fix this once the form supports name input
-                name: "Default Name",
+                name: data.name,
             });
 
             alert("User created successfully!");
