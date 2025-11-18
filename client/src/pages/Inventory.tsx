@@ -8,6 +8,7 @@ import { InventoryFilter } from '@features/InventoryFilter';
 import { SearchBar } from '@features/ui/SearchBar';
 import { CreateItemForm } from '@features/CreateItemForm';
 import { EditItemForm } from '@features/EditItemForm';
+import { ChangeLocationModal } from '@features/ChangeLocationModal';
 import { getSchemaClient } from '@lib/schemaClient';
 
 const Inventory = () => {
@@ -17,6 +18,7 @@ const Inventory = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [editingItem, setEditingItem] = useState<ItemResource | null>(null);
+    const [movingItem, setMovingItem] = useState<ItemResource | null>(null);
     const [refreshToken, setRefreshToken] = useState(0);
 
     useEffect(() => {
@@ -95,6 +97,15 @@ const Inventory = () => {
         setRefreshToken((prev) => prev + 1);
     };
 
+    const handleChangeLocation = (item: ItemResource) => {
+        setMovingItem(item);
+    };
+
+    const handleLocationChanged = () => {
+        setMovingItem(null);
+        setRefreshToken((prev) => prev + 1);
+    };
+
     return (
         <div className="p-10">
             <div className="flex justify-between items-center mb-16">
@@ -129,6 +140,18 @@ const Inventory = () => {
                     </div>
                 </div>
             )}
+
+            {movingItem && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-4">
+                    <div className="relative w-full max-w-md max-h-[90vh] overflow-y-auto">
+                        <ChangeLocationModal
+                            item={movingItem}
+                            onLocationChanged={handleLocationChanged}
+                            onCancel={() => setMovingItem(null)}
+                        />
+                    </div>
+                </div>
+            )}
             
             <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
             <InventoryFilter />
@@ -142,7 +165,11 @@ const Inventory = () => {
                     {error}
                 </p>
             ) : (
-                <InventoryList items={filteredItems} onEditItem={handleEditItem} />
+                <InventoryList 
+                    items={filteredItems} 
+                    onEditItem={handleEditItem}
+                    onChangeLocation={handleChangeLocation}
+                />
             )}
         </div>
     );

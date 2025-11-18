@@ -10,6 +10,7 @@ import {
   type ItemDraft,
   type ItemResource,
   type ListItemsResponse,
+  type ListLocationsResponse,
   type ListUsersResponse,
   type LocationDraft,
   type LocationResource,
@@ -168,10 +169,13 @@ export interface SchemaClient {
     options?: RequestOptions
   ): Promise<CreateItemResponse>;
   updateItem(
-    itemId: ObjectIdString,
-    item: ItemDraft,
+    id: string,
+    item: Partial<ItemDraft>,
     options?: RequestOptions
   ): Promise<UpdateItemResponse>;
+  listLocations(
+    options?: RequestOptions
+  ): Promise<ListLocationsResponse>;
   createLocation(
     location: LocationDraft,
     options?: RequestOptions
@@ -342,6 +346,40 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
 
         if (payload && payload.item) {
           return { item: payload.item as ItemResource };
+        }
+
+        return handleFailure(body, response);
+      }
+
+      return handleFailure(body, response);
+    },
+
+    listLocations: async (options) => {
+      const { response, body } = await request("/locations", {
+        method: "GET",
+        signal: options?.signal,
+        headers: options?.headers,
+      });
+
+      if (response.status === 204) {
+        return { locations: [] as LocationResource[] };
+      }
+
+      if (response.ok) {
+        const payload = asObject(body);
+
+        if (isErrorEnvelope(payload)) {
+          return handleFailure(body, response);
+        }
+
+        const maybeLocations = payload?.locations;
+
+        if (Array.isArray(maybeLocations)) {
+          return { locations: maybeLocations as LocationResource[] };
+        }
+
+        if (maybeLocations === undefined) {
+          return { locations: [] as LocationResource[] };
         }
 
         return handleFailure(body, response);
