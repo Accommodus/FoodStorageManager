@@ -3,11 +3,16 @@ import { UsersList } from '@features/UsersList';
 
 const Users = () => {
     const users: UserResource[] = [
-        { _id: '1', email: 'abby@email.com', name: 'Abby' },
-        { _id: '2', email: 'bob@email.com', name: 'Bob' },
-        { _id: '3', email: 'charlie@email.com', name: 'Charlie' },
-        { _id: '4', email: 'dave@email.com', name: 'Dave' },
-        { _id: '5', email: 'evan@email.com', name: 'Evan' },
+        { _id: '1', email: 'abby@email.com', name: 'Abby', role: 'admin' },
+        { _id: '2', email: 'bob@email.com', name: 'Bob', role: 'staff' },
+        {
+            _id: '3',
+            email: 'charlie@email.com',
+            name: 'Charlie',
+            role: 'volunteer',
+        },
+        { _id: '4', email: 'dave@email.com', name: 'Dave', role: 'volunteer' },
+        { _id: '5', email: 'evan@email.com', name: 'Evan', role: 'staff' },
     ];
 
     return (
