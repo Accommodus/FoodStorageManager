@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import type { ItemDraft, CreateItemResponse } from '@foodstoragemanager/schema';
+import { useState, useEffect } from 'react';
+import type { ItemDraft, CreateItemResponse, LocationResource, ListLocationsResponse } from '@foodstoragemanager/schema';
 import { getSchemaClient } from '@lib/schemaClient';
 
 interface CreateItemFormProps {
@@ -25,10 +25,45 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const [locations, setLocations] = useState<LocationResource[]>([]);
+    const [isLoadingLocations, setIsLoadingLocations] = useState(true);
 
     // Store raw string values for tags and allergens to allow typing commas
     const [tagsInput, setTagsInput] = useState('');
     const [allergensInput, setAllergensInput] = useState('');
+
+    useEffect(() => {
+        const loadLocations = async () => {
+            try {
+                setIsLoadingLocations(true);
+                const client = getSchemaClient();
+                const payload: ListLocationsResponse = await client.listLocations();
+
+                if ('error' in payload) {
+                    const issues =
+                        payload.error.issues !== undefined
+                            ? ` Details: ${JSON.stringify(payload.error.issues)}`
+                            : '';
+                    console.error(`Failed to load locations: ${payload.error.message}${issues}`);
+                    setLocations([]);
+                    return;
+                }
+
+                setLocations(payload.locations ?? []);
+            } catch (caughtError) {
+                const message =
+                    caughtError instanceof Error
+                        ? caughtError.message
+                        : 'Unable to fetch locations.';
+                console.error(message);
+                setLocations([]);
+            } finally {
+                setIsLoadingLocations(false);
+            }
+        };
+
+        void loadLocations();
+    }, []);
 
 
     const handleInputChange = (
@@ -160,16 +195,29 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
                     <label htmlFor="locationId" className="block text-sm font-medium text-gray-700 mb-1">
                         Location *
                     </label>
-                    <input
-                        type="text"
-                        id="locationId"
-                        value={formData.locationId}
-                        onChange={(e) => handleInputChange('locationId', e.target.value)}
-                        placeholder="e.g., Freezer, Pantry, Fridge"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Enter the location name where this item is stored</p>
+                    {isLoadingLocations ? (
+                        <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                            <p className="text-sm text-gray-500">Loading locations...</p>
+                        </div>
+                    ) : (
+                        <select
+                            id="locationId"
+                            value={formData.locationId}
+                            onChange={(e) => handleInputChange('locationId', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                        >
+                            <option value="">Select a location</option>
+                            {locations.map((location) => (
+                                <option key={location._id} value={location._id}>
+                                    {location.name} ({location.type})
+                                </option>
+                            ))}
+                        </select>
+                    )}
+                    {locations.length === 0 && !isLoadingLocations && (
+                        <p className="text-xs text-red-500 mt-1">No locations available. Please create a location first.</p>
+                    )}
                 </div>
 
                 {/* UPC */}

@@ -271,7 +271,7 @@ export const updateItem: ApiHandler = async (req, res, db) => {
     return;
   }
 
-  const itemId = req.params.id;
+  const { id } = req.params;
   const payload = req.body;
 
   try {
@@ -290,92 +290,96 @@ export const updateItem: ApiHandler = async (req, res, db) => {
     );
   }
 
-  let itemObjectId: Types.ObjectId;
+  let itemId: Types.ObjectId;
   try {
-    itemObjectId = sanitizeObjectId(itemId, "params.id");
+    itemId = sanitizeObjectId(id, "item.id");
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Invalid item ID.";
     return sendError(res, StatusCodes.BAD_REQUEST, message);
   }
 
-  // Debug: Log the item ID for troubleshooting
-  if (process.env.NODE_ENV !== "production") {
-    console.log("Updating item with ID:", itemId, "converted to ObjectId:", itemObjectId.toString());
-  }
-
   const draft = payload.item as Record<string, unknown>;
-
-  let updateDocument: Record<string, unknown> = {
-    updatedAt: new Date(),
-  };
+  const update: Record<string, unknown> = {};
 
   try {
-    const name = sanitizeString(draft.name, "item.name", {
-      required: true,
-    });
-    if (!name) {
-      throw new Error("item.name is required.");
-    }
-    updateDocument.name = name;
-
-    const unit = sanitizeString(draft.unit, "item.unit") ?? "ea";
-    updateDocument.unit = unit;
-
-    if (typeof draft.isActive === "boolean") {
-      updateDocument.isActive = draft.isActive;
+    if (draft.name !== undefined) {
+      const name = sanitizeString(draft.name, "item.name", {
+        required: true,
+      });
+      if (!name) {
+        throw new Error("item.name cannot be empty.");
+      }
+      update.name = name;
     }
 
-    const upc = sanitizeString(draft.upc, "item.upc");
-    if (upc) {
-      updateDocument.upc = upc;
+    if (draft.locationId !== undefined) {
+      update.locationId = sanitizeObjectId(
+        draft.locationId,
+        "item.locationId"
+      );
     }
 
-    const category = sanitizeString(draft.category, "item.category");
-    if (category) {
-      updateDocument.category = category;
+    if (draft.unit !== undefined) {
+      update.unit =
+        sanitizeString(draft.unit, "item.unit") ?? "ea";
     }
 
-    const note = sanitizeString(draft.note, "item.note");
-    if (note) {
-      updateDocument.note = note;
+    if (draft.upc !== undefined) {
+      const upc = sanitizeString(draft.upc, "item.upc");
+      update.upc = upc || null;
     }
 
-    const tags = sanitizeStringArray(draft.tags, "item.tags");
-    if (tags !== undefined) {
-      updateDocument.tags = tags;
+    if (draft.category !== undefined) {
+      const category = sanitizeString(draft.category, "item.category");
+      update.category = category || null;
     }
 
-    const allergens = sanitizeStringArray(draft.allergens, "item.allergens");
-    if (allergens !== undefined) {
-      updateDocument.allergens = allergens;
+    if (draft.note !== undefined) {
+      const note = sanitizeString(draft.note, "item.note");
+      update.note = note || null;
+    }
+
+    if (draft.tags !== undefined) {
+      const tags = sanitizeStringArray(draft.tags, "item.tags");
+      update.tags = tags || null;
+    }
+
+    if (draft.allergens !== undefined) {
+      const allergens = sanitizeStringArray(
+        draft.allergens,
+        "item.allergens"
+      );
+      update.allergens = allergens || null;
     }
 
     if (draft.caseSize !== undefined) {
-      const caseSize = sanitizeNumber(
+      update.caseSize = sanitizeNumber(
         draft.caseSize,
         "item.caseSize",
         { min: 0 }
       );
-      if (caseSize !== undefined) {
-        updateDocument.caseSize = caseSize;
-      }
     }
 
     if (draft.shelfLifeDays !== undefined) {
-      const shelfLifeDays = sanitizeNumber(
+      update.shelfLifeDays = sanitizeNumber(
         draft.shelfLifeDays,
         "item.shelfLifeDays",
         { min: 0 }
       );
-      if (shelfLifeDays !== undefined) {
-        updateDocument.shelfLifeDays = shelfLifeDays;
-      }
     }
 
-    const expiresAt = sanitizeOptionalDate(draft.expiresAt, "item.expiresAt");
-    if (expiresAt !== undefined) {
-      updateDocument.expiresAt = expiresAt;
+    if (draft.expiresAt !== undefined) {
+      const expiresAt = sanitizeOptionalDate(
+        draft.expiresAt,
+        "item.expiresAt"
+      );
+      update.expiresAt = expiresAt || null;
+    }
+
+    if (draft.isActive !== undefined) {
+      update.isActive =
+        typeof draft.isActive === "boolean" ? draft.isActive : true;
     }
   } catch (error) {
     const message =
@@ -383,15 +387,26 @@ export const updateItem: ApiHandler = async (req, res, db) => {
     return sendError(res, StatusCodes.BAD_REQUEST, message);
   }
 
+  if (Object.keys(update).length === 0) {
+    return sendError(
+      res,
+      StatusCodes.BAD_REQUEST,
+      "No fields to update."
+    );
+  }
+
   try {
     const collection = db.collection(COLLECTION);
-    
-    // First check if item exists
-    const existingItem = await collection.findOne({ _id: itemObjectId });
-    if (!existingItem) {
-      if (process.env.NODE_ENV !== "production") {
-        console.log("Item not found. Searched with ObjectId:", itemObjectId.toString(), "original ID:", itemId);
-      }
+    update.updatedAt = new Date();
+
+    const result = await collection.findOneAndUpdate(
+      { _id: itemId },
+      { $set: update },
+      { returnDocument: "after" }
+    );
+
+    // Check if document was found and updated
+    if (!result) {
       return sendError(
         res,
         StatusCodes.NOT_FOUND,
@@ -399,25 +414,22 @@ export const updateItem: ApiHandler = async (req, res, db) => {
       );
     }
 
-    await collection.findOneAndUpdate(
-      { _id: itemObjectId },
-      { $set: updateDocument },
-      { returnDocument: "after" }
-    );
-
-    // Fetch the updated item to ensure we have the latest data
-    const updatedItem = await collection.findOne({ _id: itemObjectId });
-
-    if (!updatedItem) {
-      return sendError(
-        res,
-        StatusCodes.INTERNAL_SERVER_ERROR,
-        "Item could not be retrieved after update."
-      );
+    // If value is null, the document wasn't found, but try to fetch it anyway
+    let updatedDoc = result.value;
+    if (!updatedDoc) {
+      // Try to fetch the document directly in case findOneAndUpdate didn't return it
+      updatedDoc = await collection.findOne({ _id: itemId });
+      if (!updatedDoc) {
+        return sendError(
+          res,
+          StatusCodes.NOT_FOUND,
+          "Item not found."
+        );
+      }
     }
 
     return sendSuccess(res, StatusCodes.OK, {
-      item: serializeItem(updatedItem as Record<string, unknown>),
+      item: serializeItem(updatedDoc as Record<string, unknown>),
     });
   } catch (error) {
     return handleDatabaseError(res, error, {

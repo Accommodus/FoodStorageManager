@@ -11,9 +11,10 @@ import type { ItemResource } from '@foodstoragemanager/schema';
 type InventoryItemProps = {
     item: ItemResource;
     onEdit?: (item: ItemResource) => void;
+    onChangeLocation?: (item: ItemResource) => void;
 };
 
-const InventoryItem = ({ item, onEdit }: InventoryItemProps) => {
+const InventoryItem = ({ item, onEdit, onChangeLocation }: InventoryItemProps) => {
     const [selected, setSelected] = useState(false);
     const [infoOpen, setInfoOpen] = useState(false);
 
@@ -110,7 +111,15 @@ const InventoryItem = ({ item, onEdit }: InventoryItemProps) => {
                                 <BiCheckbox className="size-8 text-neutral-700" />
                             )}
                         </button>
-                        <button aria-label="Move inventory item" className="relative z-30">
+                        <button 
+                            aria-label="Move inventory item" 
+                            className="relative z-30 cursor-pointer hover:opacity-70 transition-opacity"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onChangeLocation?.(item);
+                            }}
+                        >
                             <BiSolidTruck className="size-8 text-neutral-400" />
                         </button>
                         <button 
