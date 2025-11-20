@@ -15,7 +15,7 @@ export const UsersList = ({ users }: UsersListProps) => {
     }
 
     return (
-        <ul>
+        <ul className="flex max-w-lg flex-col gap-8">
             {users.map((user) => (
                 <li>
                     <UserItem user={user} />

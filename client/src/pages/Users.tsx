@@ -12,7 +12,9 @@ const Users = () => {
 
     return (
         <div className="p-10">
-            <h1 className="bg-green text-5xl font-bold tracking-wide">Users</h1>
+            <h1 className="bg-green mb-8 text-5xl font-bold tracking-wide">
+                Users
+            </h1>
 
             <UsersList users={users} />
         </div>
