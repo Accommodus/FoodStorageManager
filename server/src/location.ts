@@ -162,3 +162,33 @@ export const createLocation: ApiHandler = async (req, res, db) => {
     });
   }
 };
+
+export const listLocations: ApiHandler = async (req, res, db) => {
+  if (db.readyState !== 1) {
+    res.redirect("/health");
+    return;
+  }
+
+  try {
+    const collection = db.collection(COLLECTION);
+    const documents = await collection
+      .find({})
+      .sort({ name: 1 })
+      .toArray();
+
+    if (documents.length === 0) {
+      res.status(StatusCodes.NO_CONTENT).send();
+      return;
+    }
+
+    const locations = documents.map((doc) =>
+      serializeLocation(doc as Record<string, unknown>)
+    );
+
+    return sendSuccess(res, StatusCodes.OK, { locations });
+  } catch (error) {
+    return handleDatabaseError(res, error, {
+      fallbackMessage: "Failed to list locations.",
+    });
+  }
+};
