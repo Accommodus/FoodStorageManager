@@ -4,7 +4,6 @@ import type {
     ListItemsResponse,
 } from '@foodstoragemanager/schema';
 import { InventoryList } from '@features/InventoryList';
-import { InventoryFilter } from '@features/InventoryFilter';
 import { SearchBar } from '@features/ui/SearchBar';
 import { CreateItemForm } from '@features/CreateItemForm';
 import { EditItemForm } from '@features/EditItemForm';
@@ -154,7 +153,6 @@ const Inventory = () => {
             )}
             
             <SearchBar searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-            <InventoryFilter />
 
             {isLoading ? (
                 <p className="text-neutral-600" role="status">
