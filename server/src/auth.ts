@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { UserModel } from "./models/Users";
+import bcrypt from "bcrypt";
 
 export async function login(req: Request, res: Response) {
   try {
@@ -9,12 +10,17 @@ export async function login(req: Request, res: Response) {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    // find user by email and plain-text passwordHash
-    const user = await UserModel.findOne({ email, passwordHash: password });
+    const user = await UserModel.findOne({ email });
 
     if (!user) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
+
+    // Match password
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }    
 
     // Login success
     res.status(200).json({
