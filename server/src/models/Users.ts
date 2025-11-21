@@ -17,7 +17,7 @@ const UserSchema: Schema<IUser> = new Schema(
     email: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     passwordHash: { type: String, required: true },
-    roles: { type: [String], default: ['admin'] }, // Default is admin
+    roles: { type: [String], default: ['volunteer'] }, // Default is volunteer
     enabled: { type: Boolean, default: true },
   },
   {

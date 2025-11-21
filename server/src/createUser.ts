@@ -1,6 +1,6 @@
 import {Request, Response} from "express";
 import bcrypt from "bcrypt";
-import {UserModel} from "./models/Users"; // your Mongoose model
+import {UserModel} from "./models/Users";
 
 export const createUser = async (req: Request, res: Response, db: any) => {
     const { email, password, name } = req.body;
