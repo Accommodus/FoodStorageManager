@@ -20,7 +20,7 @@ import { createLocation, listLocations } from "./location";
 import { upsertLot } from "./inventory";
 import { recordTransaction } from "./transaction";
 import { createAudit } from "./audit";
-import { createUser, listUsers } from "./user";
+import { createUser, listUsers, updateUser, deleteUser } from "./user";
 
 function connectDB(uri: string): ServerHealth {
   try {
@@ -114,6 +114,8 @@ app.post("/stock-transactions", withDatabase(recordTransaction));
 app.post("/audits", withDatabase(createAudit));
 app.get("/users", withDatabase(listUsers));
 app.post("/users", withDatabase(createUser));
+app.put("/users/:id", withDatabase(updateUser));
+app.delete("/users/:id", withDatabase(deleteUser));
 
 const getRegisteredRoutes = () => {
   type RouterLayer = {

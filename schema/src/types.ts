@@ -49,6 +49,7 @@ export interface ItemResource {
 
 export type CreateItemResponse = ApiResponse<{ item: ItemResource }>;
 export type ListItemsResponse = ApiResponse<{ items: ItemResource[] }>;
+export type UpdateItemResponse = ApiResponse<{ item: ItemResource }>;
 
 export interface AddressDraft {
     line1: string;
@@ -71,6 +72,8 @@ export interface LocationResource extends LocationDraft {
 }
 
 export type CreateLocationResponse = ApiResponse<{ location: LocationResource }>;
+export type ListLocationsResponse = ApiResponse<{ locations: LocationResource[] }>;
+
 
 export interface InventoryLotDraft {
     itemId: ObjectIdString;
@@ -192,4 +195,6 @@ export interface UserResource {
 }
 
 export type CreateUserResponse = ApiResponse<{ user: UserResource }>;
+export type UpdateUserResponse = ApiResponse<{ user: UserResource }>;
+export type DeleteUserResponse = ApiResponse<{ deleted: boolean }>;
 export type ListUsersResponse = ApiResponse<{ users: UserResource[] }>;

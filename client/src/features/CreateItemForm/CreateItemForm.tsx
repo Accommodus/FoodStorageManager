@@ -7,6 +7,9 @@ interface CreateItemFormProps {
     onCancel?: () => void;
 }
 
+/// Function definitions provided by Copilot and logic  was filled in by Luis Goicoechea
+
+
 export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps) => {
     const [formData, setFormData] = useState<ItemDraft>({
         name: '',

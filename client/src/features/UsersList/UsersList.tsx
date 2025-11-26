@@ -3,9 +3,11 @@ import { UserItem } from '@features/UsersList/UserItem';
 
 type UsersListProps = {
     users: UserResource[];
+    onEditUser?: (user: UserResource) => void;
+    onDeleteUser?: (user: UserResource) => void;
 };
 
-export const UsersList = ({ users }: UsersListProps) => {
+export const UsersList = ({ users, onEditUser, onDeleteUser }: UsersListProps) => {
     if (users.length === 0) {
         return (
             <p className="text-neutral-600" role="status">
@@ -17,8 +19,8 @@ export const UsersList = ({ users }: UsersListProps) => {
     return (
         <ul className="flex max-w-lg flex-col gap-8">
             {users.map((user) => (
-                <li>
-                    <UserItem user={user} />
+                <li key={user._id}>
+                    <UserItem user={user} onEditUser={onEditUser} onDeleteUser={onDeleteUser} />
                 </li>
             ))}
         </ul>
