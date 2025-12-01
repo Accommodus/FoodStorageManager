@@ -437,3 +437,40 @@ export const updateItem: ApiHandler = async (req, res, db) => {
     });
   }
 };
+
+// COPILOT ADDED FUNCTION BELOW
+
+export const deleteItem: ApiHandler = async (req, res, db) => {
+  if (db.readyState !== 1) {
+    res.redirect("/health");
+    return;
+  }
+
+  const { id } = req.params;
+
+  let itemId: Types.ObjectId;
+  try {
+    itemId = sanitizeObjectId(id, "item.id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid item ID.";
+    return sendError(res, StatusCodes.BAD_REQUEST, message);
+  }
+
+  try {
+    const collection = db.collection(COLLECTION);
+    const result = await collection.findOneAndDelete({ _id: itemId });
+
+    if (!result || !result.value) {
+      return sendError(res, StatusCodes.NOT_FOUND, "Item not found.");
+    }
+
+    return sendSuccess(res, StatusCodes.OK, {
+      item: serializeItem(result.value as Record<string, unknown>),
+    });
+  } catch (error) {
+    return handleDatabaseError(res, error, {
+      fallbackMessage: "Failed to delete item.",
+    });
+  }
+};
+// END COPILOT ADDED FUNCTION
