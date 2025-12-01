@@ -10,9 +10,10 @@ type UserItemProps = {
 
 export const UserItem = ({ user, onEditUser, onDeleteUser }: UserItemProps) => {
     const role = useMemo(() => {
-        if (user.role == undefined) return '';
+        const currentRole = user.role?.[0];
+        if (!currentRole) return '';
 
-        return user.role[0].toUpperCase() + user.role.slice(1).toLowerCase();
+        return currentRole[0].toUpperCase() + currentRole.slice(1).toLowerCase();
     }, [user.role]);
 
     const handleEditClick = () => {

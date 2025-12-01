@@ -194,11 +194,17 @@ export interface UserResource {
   _id: ObjectIdString;
   email: string;
   name: string;
-  role: "admin" | "staff" | "volunteer";
+  role: ["admin" | "staff" | "volunteer"];
   enabled: boolean;
   createdAt: ISODateString;
 }
 
+export interface AuthenticateUserPayload {
+  email: string;
+  password: string;
+}
+
+export type AuthenticateUserResponse = ApiResponse<{ user: UserResource }>;
 export type CreateUserResponse = ApiResponse<{ user: UserResource }>;
 export type UpdateUserResponse = ApiResponse<{ user: UserResource }>;
 export type DeleteUserResponse = ApiResponse<{ deleted: boolean }>;
