@@ -1,17 +1,27 @@
 import { LoginForm } from '@features/LoginForm';
-import { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const Login = () => {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const handleSubmit = async (data: { email: string; password: string }) => {
+        try {
+            const response = await axios.post("http://localhost:3000/auth/login", data);
+            console.log("Login response:", response.data);
 
-    useEffect(() => {
-        console.log('Email: ' + email + ', Password: ' + password);
-    }, [email, password]);
+            alert("Login successful!");
+            // Optionally, save token/session here
+            // localStorage.setItem("token", response.data.token);
+        } catch (err) {
+            let message = "Server error";
 
-    const handleSubmit = (data: { email: string; password: string }) => {
-        setEmail(data.email);
-        setPassword(data.password);
+            if (axios.isAxiosError(err)) {
+                message = err.response?.data?.message || message;
+                console.error("Login error:", err.response?.data || err.message);
+            } else {
+                console.error("Login error:", err);
+            }
+
+            alert("Login failed: " + message);
+        }
     };
 
     return (
