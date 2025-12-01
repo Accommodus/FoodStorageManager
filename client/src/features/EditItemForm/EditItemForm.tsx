@@ -8,6 +8,8 @@ interface EditItemFormProps {
     onCancel?: () => void;
 }
 
+/// Function definitions provided by Copilot and logic  was filled in by Luis Goicoechea
+
 export const EditItemForm = ({ item, onItemUpdated, onCancel }: EditItemFormProps) => {
     const [formData, setFormData] = useState<ItemDraft>({
         name: item.name || '',
