@@ -49,6 +49,7 @@ export interface ItemResource {
 
 export type CreateItemResponse = ApiResponse<{ item: ItemResource }>;
 export type UpdateItemResponse = ApiResponse<{ item: ItemResource }>;
+export type DeleteItemResponse = ApiResponse<{ item: ItemResource }>;
 export type ListItemsResponse = ApiResponse<{ items: ItemResource[] }>;
 
 export interface AddressDraft {
