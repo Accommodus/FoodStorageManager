@@ -1,15 +1,4 @@
-import { useForm } from 'react-hook-form';
-import type { SubmitHandler } from 'react-hook-form';
-import {
-    BiSolidUser,
-    BiSolidEnvelope,
-    BiSolidLockAlt,
-    BiCheck,
-} from 'react-icons/bi';
-
-type CreateUserFormProps = {
-    submitHandler: (data: FormInputs) => void;
-};
+import { useState } from 'react';
 
 type FormInputs = {
     name: string;
@@ -18,59 +7,175 @@ type FormInputs = {
     confirmPassword: string;
 };
 
-export const CreateUserForm = ({ submitHandler }: CreateUserFormProps) => {
-    const { register, handleSubmit } = useForm<FormInputs>();
+type CreateUserFormProps = {
+    submitHandler: (data: FormInputs) => Promise<void> | void;
+    onCancel?: () => void;
+};
 
-    const onSubmit: SubmitHandler<FormInputs> = (data) => {
-        submitHandler(data);
+const initialForm: FormInputs = {
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+};
+
+export const CreateUserForm = ({ submitHandler, onCancel }: CreateUserFormProps) => {
+    const [formData, setFormData] = useState<FormInputs>(initialForm);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
+
+    const handleInputChange = (field: keyof FormInputs, value: string) => {
+        setFormData((prev) => ({
+            ...prev,
+            [field]: value,
+        }));
+    };
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+
+        if (!formData.name.trim() || !formData.email.trim()) {
+            setError('Name and email are required.');
+            setSuccess(null);
+            return;
+        }
+
+        if (formData.password !== formData.confirmPassword) {
+            setError('Passwords do not match.');
+            setSuccess(null);
+            return;
+        }
+
+        try {
+            setIsSubmitting(true);
+            setError(null);
+
+            await submitHandler({
+                name: formData.name.trim(),
+                email: formData.email.trim(),
+                password: formData.password,
+                confirmPassword: formData.confirmPassword,
+            });
+
+            setSuccess('User created successfully!');
+            setFormData(initialForm);
+        } catch (caughtError) {
+            const message =
+                caughtError instanceof Error
+                    ? caughtError.message
+                    : 'Failed to create user.';
+            setError(message);
+            setSuccess(null);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
-        <form
-            className="m-auto flex w-100 flex-col gap-4 rounded-2xl bg-neutral-100 px-16 py-8 shadow-lg"
-            onSubmit={handleSubmit(onSubmit)}
-        >
-            <div className="relative flex gap-2">
-                <BiSolidUser className="absolute left-2 size-6 self-center text-neutral-400" />
-                <input
-                    className="bg-neutral-150 w-full rounded-lg py-2 pr-4 pl-10 text-lg text-neutral-900"
-                    placeholder="Name"
-                    {...register('name')}
-                />
-            </div>
-            <div className="relative flex gap-2">
-                <BiSolidEnvelope className="absolute left-2 size-6 self-center text-neutral-400" />
-                <input
-                    className="bg-neutral-150 w-full rounded-lg py-2 pr-4 pl-10 text-lg text-neutral-900"
-                    type="email"
-                    placeholder="Email"
-                    {...register('email')}
-                />
-            </div>
-            <div className="relative flex gap-2">
-                <BiSolidLockAlt className="absolute left-2 size-6 self-center text-neutral-400" />
-                <input
-                    className="bg-neutral-150 w-full rounded-lg py-2 pr-4 pl-10 text-lg text-neutral-900"
-                    type="password"
-                    placeholder="Password"
-                    {...register('password')}
-                />
-            </div>
-            <div className="relative flex gap-2">
-                <BiCheck className="absolute left-2 size-6 self-center text-neutral-400" />
-                <input
-                    className="bg-neutral-150 w-full rounded-lg py-2 pr-4 pl-10 text-lg text-neutral-900"
-                    type="password"
-                    placeholder="Confirm Password"
-                    {...register('confirmPassword')}
-                />
-            </div>
-            <button
-                className="bg-primary-300 text-md mt-8 rounded-lg px-4 py-2"
-                type="submit"
-            >
-                Create New User
-            </button>
-        </form>
+        <div className="rounded-lg bg-white p-6 shadow-md">
+            <h2 className="mb-6 text-2xl font-bold text-gray-800">Create New User</h2>
+
+            {error && (
+                <div className="mb-4 rounded border border-red-400 bg-red-100 p-3 text-red-700">
+                    {error}
+                </div>
+            )}
+
+            {success && (
+                <div className="mb-4 rounded border border-green-400 bg-green-100 p-3 text-green-700">
+                    {success}
+                </div>
+            )}
+
+            <form className="space-y-4" onSubmit={handleSubmit}>
+                <div>
+                    <label
+                        htmlFor="name"
+                        className="mb-1 block text-sm font-medium text-gray-700"
+                    >
+                        Name *
+                    </label>
+                    <input
+                        id="name"
+                        type="text"
+                        value={formData.name}
+                        onChange={(event) => handleInputChange('name', event.target.value)}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label
+                        htmlFor="email"
+                        className="mb-1 block text-sm font-medium text-gray-700"
+                    >
+                        Email *
+                    </label>
+                    <input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(event) => handleInputChange('email', event.target.value)}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label
+                        htmlFor="password"
+                        className="mb-1 block text-sm font-medium text-gray-700"
+                    >
+                        Password *
+                    </label>
+                    <input
+                        id="password"
+                        type="password"
+                        value={formData.password}
+                        onChange={(event) => handleInputChange('password', event.target.value)}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    />
+                </div>
+
+                <div>
+                    <label
+                        htmlFor="confirmPassword"
+                        className="mb-1 block text-sm font-medium text-gray-700"
+                    >
+                        Confirm Password *
+                    </label>
+                    <input
+                        id="confirmPassword"
+                        type="password"
+                        value={formData.confirmPassword}
+                        onChange={(event) => handleInputChange('confirmPassword', event.target.value)}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    />
+                </div>
+
+                <div className="flex flex-wrap gap-3 pt-2">
+                    {onCancel && (
+                        <button
+                            type="button"
+                            onClick={onCancel}
+                            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                        >
+                            Cancel
+                        </button>
+                    )}
+                    <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="rounded-md bg-green-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-500 disabled:cursor-not-allowed disabled:opacity-80"
+                    >
+                        {isSubmitting ? 'Creating...' : 'Create User'}
+                    </button>
+                </div>
+            </form>
+        </div>
     );
 };

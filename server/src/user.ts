@@ -1,4 +1,5 @@
 import { StatusCodes } from "http-status-codes";
+import bcrypt from "bcrypt";
 import type { Types } from "mongoose";
 import type { ApiHandler } from "./types.js";
 import {
@@ -7,11 +8,7 @@ import {
   sanitizeString,
   sanitizeObjectId,
 } from "./validation.js";
-import {
-  handleDatabaseError,
-  sendError,
-  sendSuccess,
-} from "./responses.js";
+import { handleDatabaseError, sendError, sendSuccess } from "./responses.js";
 
 const COLLECTION = "users";
 const ALLOWED_ROLES = new Set(["admin", "staff", "volunteer"]);
@@ -39,14 +36,13 @@ const serializeUser = (doc: Record<string, unknown>) => {
     : [];
   // Convert roles array to single role for client (take first role or undefined)
   const role = roles.length > 0 ? roles[0] : undefined;
-  
+
   return {
     _id: String(doc._id),
     email: String(doc.email),
     name: doc.name ? String(doc.name) : undefined,
-    role: role as 'admin' | 'staff' | 'volunteer' | undefined,
-    enabled:
-      typeof doc.enabled === "boolean" ? doc.enabled : undefined,
+    role: role as "admin" | "staff" | "volunteer" | undefined,
+    enabled: typeof doc.enabled === "boolean" ? doc.enabled : undefined,
     createdAt: doc.createdAt ? toIsoString(doc.createdAt) : undefined,
   };
 };
@@ -63,9 +59,7 @@ export const createUser: ApiHandler = async (req, res, db) => {
     assertSafePayload(payload);
   } catch (error) {
     const message =
-      error instanceof Error
-        ? error.message
-        : "Invalid user payload.";
+      error instanceof Error ? error.message : "Invalid user payload.";
     return sendError(res, StatusCodes.BAD_REQUEST, message);
   }
 
@@ -84,26 +78,28 @@ export const createUser: ApiHandler = async (req, res, db) => {
   try {
     const email = sanitizeString(draft.email, "user.email", {
       required: true,
-      lowercase: true,
     });
 
-    if (!email) {
-      throw new Error("user.email is required.");
-    }
+    const name = sanitizeString(draft.name, "user.name", {
+      required: true,
+    });
 
-    const name = sanitizeString(draft.name, "user.name");
-    const passwordHash = sanitizeString(
-      draft.passwordHash,
-      "user.passwordHash",
-      { allowEmpty: true }
-    );
+    const password =
+      sanitizeString(draft.passwordHash, "user.passwordHash", {
+        required: true,
+      }) ??
+      (() => {
+        throw new Error("Missing Password");
+      })();
+    const passwordHash = await bcrypt.hash(password, 10);
 
     // Convert single role to roles array for database
-    const role = typeof draft.role === "string" ? draft.role.trim().toLowerCase() : undefined;
-    const roles = role && ALLOWED_ROLES.has(role) ? [role] : [];
-    
-    const enabled =
-      typeof draft.enabled === "boolean" ? draft.enabled : true;
+    const role = sanitizeString(draft.role, "user.role", {
+      allowEmpty: true,
+    }) ?? "volunteer";
+    const roles = [role];
+
+    const enabled = typeof draft.enabled === "boolean" ? draft.enabled : true;
 
     const now = new Date();
 
@@ -204,8 +200,7 @@ export const updateUser: ApiHandler = async (req, res, db) => {
   try {
     userId = sanitizeObjectId(id, "user.id");
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Invalid user ID.";
+    const message = error instanceof Error ? error.message : "Invalid user ID.";
     return sendError(res, StatusCodes.BAD_REQUEST, message);
   }
 
@@ -220,16 +215,19 @@ export const updateUser: ApiHandler = async (req, res, db) => {
 
     if (draft.role !== undefined) {
       // Convert single role to roles array for database
-      const role = typeof draft.role === "string" 
-        ? draft.role.trim().toLowerCase() 
-        : undefined;
-      
+      const role =
+        typeof draft.role === "string"
+          ? draft.role.trim().toLowerCase()
+          : undefined;
+
       if (role && ALLOWED_ROLES.has(role)) {
         update.roles = [role];
       } else if (role === null || role === undefined || role === "") {
         update.roles = [];
       } else {
-        throw new Error(`Invalid role: ${role}. Allowed roles are: admin, staff, volunteer.`);
+        throw new Error(
+          `Invalid role: ${role}. Allowed roles are: admin, staff, volunteer.`
+        );
       }
     }
 
@@ -280,8 +278,7 @@ export const deleteUser: ApiHandler = async (req, res, db) => {
   try {
     userId = sanitizeObjectId(id, "user.id");
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Invalid user ID.";
+    const message = error instanceof Error ? error.message : "Invalid user ID.";
     return sendError(res, StatusCodes.BAD_REQUEST, message);
   }
 

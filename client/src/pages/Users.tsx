@@ -4,6 +4,7 @@ import { UsersList } from '@features/UsersList';
 import { ChangeUserRoleModal } from '@features/ChangeUserRoleModal';
 import { DeleteUserConfirmationModal } from '@features/DeleteUserConfirmationModal';
 import { getSchemaClient } from '@lib/schemaClient';
+import { CreateUserForm } from '@features/CreateUserForm';
 
 const Users = () => {
     const [users, setUsers] = useState<UserResource[]>([]);
@@ -12,6 +13,7 @@ const Users = () => {
     const [editingUser, setEditingUser] = useState<UserResource | null>(null);
     const [deletingUser, setDeletingUser] = useState<UserResource | null>(null);
     const [refreshToken, setRefreshToken] = useState(0);
+    const [showCreateForm, setShowCreateForm] = useState(false);
 
     useEffect(() => {
         const controller = new AbortController();
@@ -82,11 +84,45 @@ const Users = () => {
         setRefreshToken((prev) => prev + 1);
     };
 
+    const handleCreateUser = async (data: {
+        name: string;
+        email: string;
+        password: string;
+        confirmPassword: string;
+    }) => {
+        const client = getSchemaClient();
+        await client.createUser({
+            name: data.name,
+            email: data.email,
+            password: data.password,
+        });
+
+        setShowCreateForm(false);
+        setRefreshToken((prev) => prev + 1);
+    };
+
     return (
         <div className="p-10">
-            <h1 className="bg-green mb-8 text-5xl font-bold tracking-wide">
-                Users
-            </h1>
+            <div className="mb-8 flex items-center justify-between">
+                <h1 className="bg-green text-5xl font-bold tracking-wide">
+                    Users
+                </h1>
+                <button
+                    onClick={() => setShowCreateForm(!showCreateForm)}
+                    className="rounded-lg bg-blue-600 px-6 py-3 text-white transition-colors hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                    {showCreateForm ? 'Hide Form' : 'Add New User'}
+                </button>
+            </div>
+
+            {showCreateForm && (
+                <div className="mb-8">
+                    <CreateUserForm
+                        submitHandler={handleCreateUser}
+                        onCancel={() => setShowCreateForm(false)}
+                    />
+                </div>
+            )}
 
             {editingUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-transparent p-4">
