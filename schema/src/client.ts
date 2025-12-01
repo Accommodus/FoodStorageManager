@@ -19,6 +19,7 @@ import {
   type StockTransactionDraft,
   type StockTransactionResource,
   type UpdateItemResponse,
+  type DeleteItemResponse,
   type UpsertInventoryLotResponse,
   type UserDraft,
   type UserResource,
@@ -173,6 +174,7 @@ export interface SchemaClient {
     item: Partial<ItemDraft>,
     options?: RequestOptions
   ): Promise<UpdateItemResponse>;
+  deleteItem(id: string, options?: RequestOptions): Promise<DeleteItemResponse>;
   listLocations(
     options?: RequestOptions
   ): Promise<ListLocationsResponse>;
@@ -353,6 +355,33 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
 
       return handleFailure(body, response);
     },
+
+    // COPILOT ADDED FUNCTION BELOW
+
+    deleteItem: async (itemId, options) => {
+      const { response, body } = await request(`/items/${itemId}`, {
+        method: "DELETE",
+        signal: options?.signal,
+        headers: options?.headers,
+      });
+
+      if (response.ok) {
+        const payload = asObject(body);
+
+        if (isErrorEnvelope(payload)) {
+          return handleFailure(body, response);
+        }
+
+        if (payload && payload.item) {
+          return { item: payload.item as ItemResource };
+        }
+
+        return handleFailure(body, response);
+      }
+
+      return handleFailure(body, response);
+    },
+    // END COPILOT ADDED FUNCTION
 
     listLocations: async (options) => {
       const { response, body } = await request("/locations", {
