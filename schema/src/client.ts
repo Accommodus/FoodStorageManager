@@ -6,6 +6,7 @@ import {
   type CreateLocationResponse,
   type CreateUserResponse,
   type DeleteUserResponse,
+  type DeleteItemResponse,
   type InventoryLotDraft,
   type InventoryLotResource,
   type ItemDraft,
@@ -129,10 +130,7 @@ const tryParseJson = async (response: Response) => {
   }
 };
 
-const extractError = (
-  body: unknown,
-  fallback: string
-): ApiErrorPayload => {
+const extractError = (body: unknown, fallback: string): ApiErrorPayload => {
   if (
     body &&
     typeof body === "object" &&
@@ -176,9 +174,7 @@ export interface SchemaClient {
     options?: RequestOptions
   ): Promise<UpdateItemResponse>;
   deleteItem(id: string, options?: RequestOptions): Promise<DeleteItemResponse>;
-  listLocations(
-    options?: RequestOptions
-  ): Promise<ListLocationsResponse>;
+  listLocations(options?: RequestOptions): Promise<ListLocationsResponse>;
   createLocation(
     location: LocationDraft,
     options?: RequestOptions
@@ -205,19 +201,14 @@ export interface SchemaClient {
     user: Partial<UserDraft>,
     options?: RequestOptions
   ): Promise<UpdateUserResponse>;
-  deleteUser(
-    id: string,
-    options?: RequestOptions
-  ): Promise<DeleteUserResponse>;
+  deleteUser(id: string, options?: RequestOptions): Promise<DeleteUserResponse>;
 }
 
 export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
   const { baseUrl, defaultHeaders, fetchFn } = init;
   const runtimeFetch =
     fetchFn ??
-    (typeof fetch === "function"
-      ? fetch.bind(globalThis)
-      : undefined);
+    (typeof fetch === "function" ? fetch.bind(globalThis) : undefined);
 
   if (!runtimeFetch) {
     throw new Error(
@@ -242,9 +233,7 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
     return { response, body };
   };
 
-  const asObject = (
-    value: unknown
-  ): Record<string, unknown> | undefined =>
+  const asObject = (value: unknown): Record<string, unknown> | undefined =>
     value && typeof value === "object"
       ? (value as Record<string, unknown>)
       : undefined;
@@ -254,10 +243,7 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
   ): value is Record<string, unknown> & { error: unknown } =>
     Boolean(value && "error" in value);
 
-  const handleFailure = (
-    body: unknown,
-    response: Response
-  ) => {
+  const handleFailure = (body: unknown, response: Response) => {
     const fallback =
       response.statusText && response.statusText.trim().length > 0
         ? response.statusText
@@ -366,9 +352,8 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
       return handleFailure(body, response);
     },
 
-    // COPILOT ADDED FUNCTION BELOW
-
-    deleteItem: async (itemId, options) => {
+    // Based on "deleteUser"
+    deleteItem: async (itemId: string, options?: RequestOptions) => {
       const { response, body } = await request(`/items/${itemId}`, {
         method: "DELETE",
         signal: options?.signal,
@@ -382,16 +367,11 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
           return handleFailure(body, response);
         }
 
-        if (payload && payload.item) {
-          return { item: payload.item as ItemResource };
-        }
-
-        return handleFailure(body, response);
+        return { deleted: true };
       }
 
       return handleFailure(body, response);
     },
-    // END COPILOT ADDED FUNCTION
 
     listLocations: async (options) => {
       const { response, body } = await request("/locations", {
@@ -603,35 +583,33 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
       return handleFailure(body, response);
     },
 
+    updateUser: async (userId, user, options) => {
+      const { response, body } = await request(`/users/${userId}`, {
+        method: "PUT",
+        signal: options?.signal,
+        headers: mergeHeaders(
+          { "Content-Type": JSON_MEDIA_TYPE },
+          options?.headers
+        ),
+        body: toJsonBody({ user }),
+      });
 
+      if (response.ok) {
+        const payload = asObject(body);
 
-  updateUser: async (userId, user, options) => {
-    const { response, body } = await request(`/users/${userId}`, {
-      method: "PUT",
-      signal: options?.signal,
-      headers: mergeHeaders(
-        { "Content-Type": JSON_MEDIA_TYPE },
-        options?.headers
-      ),
-      body: toJsonBody({ user }),
-    });
+        if (isErrorEnvelope(payload)) {
+          return handleFailure(body, response);
+        }
 
-    if (response.ok) {
-      const payload = asObject(body);
+        if (payload && payload.user) {
+          return { user: payload.user as UserResource };
+        }
 
-      if (isErrorEnvelope(payload)) {
         return handleFailure(body, response);
       }
 
-      if (payload && payload.user) {
-        return { user: payload.user as UserResource };
-      }
-
       return handleFailure(body, response);
-    }
-
-    return handleFailure(body, response);
-  },
+    },
 
     deleteUser: async (userId: string, options?: RequestOptions) => {
       const { response, body } = await request(`/users/${userId}`, {
