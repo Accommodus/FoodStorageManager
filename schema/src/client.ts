@@ -5,6 +5,7 @@ import {
   type CreateItemResponse,
   type CreateLocationResponse,
   type CreateUserResponse,
+  type DeleteUserResponse,
   type InventoryLotDraft,
   type InventoryLotResource,
   type ItemDraft,
@@ -19,7 +20,7 @@ import {
   type StockTransactionDraft,
   type StockTransactionResource,
   type UpdateItemResponse,
-  type DeleteItemResponse,
+  type UpdateUserResponse,
   type UpsertInventoryLotResponse,
   type UserDraft,
   type UserResource,
@@ -199,6 +200,15 @@ export interface SchemaClient {
     user: UserDraft,
     options?: RequestOptions
   ): Promise<CreateUserResponse>;
+  updateUser(
+    id: string,
+    user: Partial<UserDraft>,
+    options?: RequestOptions
+  ): Promise<UpdateUserResponse>;
+  deleteUser(
+    id: string,
+    options?: RequestOptions
+  ): Promise<DeleteUserResponse>;
 }
 
 export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
@@ -588,6 +598,56 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
         }
 
         return handleFailure(body, response);
+      }
+
+      return handleFailure(body, response);
+    },
+
+
+
+  updateUser: async (userId, user, options) => {
+    const { response, body } = await request(`/users/${userId}`, {
+      method: "PUT",
+      signal: options?.signal,
+      headers: mergeHeaders(
+        { "Content-Type": JSON_MEDIA_TYPE },
+        options?.headers
+      ),
+      body: toJsonBody({ user }),
+    });
+
+    if (response.ok) {
+      const payload = asObject(body);
+
+      if (isErrorEnvelope(payload)) {
+        return handleFailure(body, response);
+      }
+
+      if (payload && payload.user) {
+        return { user: payload.user as UserResource };
+      }
+
+      return handleFailure(body, response);
+    }
+
+    return handleFailure(body, response);
+  },
+
+    deleteUser: async (userId: string, options?: RequestOptions) => {
+      const { response, body } = await request(`/users/${userId}`, {
+        method: "DELETE",
+        signal: options?.signal,
+        headers: options?.headers,
+      });
+
+      if (response.ok) {
+        const payload = asObject(body);
+
+        if (isErrorEnvelope(payload)) {
+          return handleFailure(body, response);
+        }
+
+        return { deleted: true };
       }
 
       return handleFailure(body, response);

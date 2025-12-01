@@ -8,6 +8,9 @@ interface ChangeLocationModalProps {
     onCancel?: () => void;
 }
 
+/// Function definitions provided by Copilot and logic  was filled in by Luis Goicoechea
+
+
 export const ChangeLocationModal = ({ item, onLocationChanged, onCancel }: ChangeLocationModalProps) => {
     const [locations, setLocations] = useState<LocationResource[]>([]);
     const [selectedLocationId, setSelectedLocationId] = useState<string>(item.locationId);
@@ -152,6 +155,7 @@ export const ChangeLocationModal = ({ item, onLocationChanged, onCancel }: Chang
                 </form>
             )}
         </div>
+    
     );
 };
 

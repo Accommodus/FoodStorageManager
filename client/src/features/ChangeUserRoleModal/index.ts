@@ -1,0 +1,2 @@
+export { ChangeUserRoleModal } from './ChangeUserRoleModal';
+
