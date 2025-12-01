@@ -13,7 +13,10 @@ import type { UserResource } from "@foodstoragemanager/schema";
 
 const COLLECTION = "users";
 const ALLOWED_ROLES = new Set(["admin", "staff", "volunteer"]);
-const NOW = new Date().toISOString();
+
+function formatNow(): string {
+  return new Date().toISOString();
+}
 
 function toIsoString(value: unknown): string | undefined {
   if (value instanceof Date) return value.toISOString();
@@ -40,7 +43,7 @@ function sanitizeRoles(value: unknown): string | undefined {
 
 function serializeUser(doc: Record<string, unknown>): UserResource {
   const role = sanitizeRoles(doc.roles ?? doc.role) ?? "volunteer";
-  const createdAt: string = toIsoString(doc.createdAt) ?? NOW;
+  const createdAt: string = toIsoString(doc.createdAt) ?? formatNow();
 
   return {
     _id: String(doc._id),
@@ -117,11 +120,13 @@ export const createUser: ApiHandler = async (req, res, db) => {
 
     const enabled = typeof draft.enabled === "boolean" ? draft.enabled : true;
 
+    const now = new Date();
     document = {
       email,
       roles: role && ALLOWED_ROLES.has(role) ? [role] : ["volunteer"],
       enabled,
-      createdAt: NOW,
+      createdAt: now,
+      updatedAt: now,
     };
 
     if (name) {
@@ -318,7 +323,9 @@ export const authenticateUser: ApiHandler = async (req, res, db) => {
     assertSafePayload(payload);
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Invalid authentication payload.";
+      error instanceof Error
+        ? error.message
+        : "Invalid authentication payload.";
     return sendError(res, StatusCodes.BAD_REQUEST, message);
   }
 
@@ -342,7 +349,9 @@ export const authenticateUser: ApiHandler = async (req, res, db) => {
     })!;
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : "Invalid authentication payload.";
+      error instanceof Error
+        ? error.message
+        : "Invalid authentication payload.";
     return sendError(res, StatusCodes.BAD_REQUEST, message);
   }
 
