@@ -1,32 +1,47 @@
 import * as path from "node:path";
 import * as url from "node:url";
+import * as fs from "node:fs";
 import dotenv from "dotenv";
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({
-  path: path.resolve(__dirname, "../../.env"),
-  override: true,
-});
+const envPaths = [
+  // When running from TS source
+  path.resolve(__dirname, "../../.env"),
+  // When running from the built output (dist/server/src -> ../../../../.env)
+  path.resolve(__dirname, "../../../../.env"),
+];
+
+for (const candidate of envPaths) {
+  if (fs.existsSync(candidate)) {
+    dotenv.config({
+      path: candidate,
+      override: true,
+    });
+    break;
+  }
+}
 
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import { ApiHandler, ServerHealth } from "./types";
-import { getHealth } from "./health";
-import { createItem, listItems, updateItem, deleteItem } from "./item";
-import { createLocation, listLocations } from "./location";
-import { upsertLot } from "./inventory";
-import { recordTransaction } from "./transaction";
-import { createAudit } from "./audit";
+import { ApiHandler, ServerHealth } from "./types.js";
+import { getHealth } from "./health.js";
+import { createItem, listItems, updateItem, deleteItem } from "./item.js";
+import { createLocation, listLocations } from "./location.js";
+import { upsertLot } from "./inventory.js";
+import { recordTransaction } from "./transaction.js";
+import { createAudit } from "./audit.js";
 import {
   createUser,
   listUsers,
   updateUser,
   deleteUser,
   authenticateUser,
-} from "./user";
+} from "./user.js";
+
+const CLIENT_DIST = path.resolve(__dirname, "../../client/dist");
 
 function connectDB(uri: string): ServerHealth {
   try {
@@ -98,6 +113,10 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+if (fs.existsSync(CLIENT_DIST)) {
+  app.use(express.static(CLIENT_DIST));
+}
 
 const withDatabase =
   (handler: ApiHandler) =>
@@ -191,8 +210,34 @@ app.get("/", (req, res) => {
   if (!connection.ok) {
     return getHealth(req, res, connection);
   }
+
+  if (fs.existsSync(CLIENT_DIST)) {
+    return res.sendFile(path.join(CLIENT_DIST, "index.html"));
+  }
+
   res.status(200).send("server is running.");
 });
+
+// Fallback to SPA index for non-API routes when the client build exists.
+if (fs.existsSync(CLIENT_DIST)) {
+  app.use((req, res, next) => {
+    const isApiRoute = req.path.startsWith("/items") ||
+      req.path.startsWith("/locations") ||
+      req.path.startsWith("/inventory") ||
+      req.path.startsWith("/stock-transactions") ||
+      req.path.startsWith("/audits") ||
+      req.path.startsWith("/users") ||
+      req.path.startsWith("/auth") ||
+      req.path.startsWith("/routes") ||
+      req.path === "/health";
+
+    if (isApiRoute) {
+      return next();
+    }
+
+    return res.sendFile(path.join(CLIENT_DIST, "index.html"));
+  });
+}
 
 app.listen(port, () => {
   console.log(`Server is running on PORT: ${port}`);

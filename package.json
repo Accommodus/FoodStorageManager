@@ -5,8 +5,9 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "dev": "npm run install-all && npm run schema && concurrently \"npm run server\" \"npm run client\"",
-    "install-all": "npm install && npm --workspace=client install && npm --workspace=server install && npm --workspace=schema install",
+    "dev": "npm run schema && concurrently \"npm run server\" \"npm run client\"",
+    "build": "npm run schema && npm --workspace=server run build && npm --workspace=client run build",
+    "start": "npm run build && npm --workspace=server run start",
     "client": "npm --workspace=client run dev",
     "server": "npm --workspace=server run dev",
     "schema": "npm --workspace=schema run build"
