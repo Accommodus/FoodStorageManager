@@ -1,6 +1,7 @@
 import Login from './pages/Login.tsx';
 import AppLayout from './pages/AppLayout.tsx';
 import Inventory from './pages/Inventory.tsx';
+import Users from './pages/Users.tsx';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 
 const App = () => {
@@ -15,6 +16,7 @@ const App = () => {
                         element={<Navigate to="inventory" replace />}
                     />
                     <Route path="inventory" element={<Inventory />} />
+                    <Route path="users" element={<Users />} />
                 </Route>
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>

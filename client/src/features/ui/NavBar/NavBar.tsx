@@ -6,7 +6,7 @@ export const NavBar = () => {
             <nav className="flex flex-1 items-center justify-around">
                 <NavLink to={'/app/inventory'}>Inventory</NavLink>
                 <NavLink to={'/app/'}>Account Information</NavLink>
-                <NavLink to={'/app/'}>Users</NavLink>
+                <NavLink to={'/app/users'}>Users</NavLink>
             </nav>
         </div>
     );
