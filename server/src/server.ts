@@ -20,8 +20,8 @@ import { createLocation, listLocations } from "./location";
 import { upsertLot } from "./inventory";
 import { recordTransaction } from "./transaction";
 import { createAudit } from "./audit";
-//import { createUser, listUsers } from "./user";
-import { createUser } from "./createUser";
+import { createUser, listUsers } from "./user";
+import { login } from "./auth";
 
 function connectDB(uri: string): ServerHealth {
   try {
