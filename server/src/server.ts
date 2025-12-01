@@ -114,9 +114,11 @@ app.post("/locations", withDatabase(createLocation));
 app.put("/inventory/lots", withDatabase(upsertLot));
 app.post("/stock-transactions", withDatabase(recordTransaction));
 app.post("/audits", withDatabase(createAudit));
-app.get("/users", withDatabase(listUsers));
-app.post("/users", withDatabase(createUser));
-app.post("/auth/login", login);
+// Below seems to also create users with the file user.ts?
+// Not sure if not using that breaks anything...
+//app.get("/users", withDatabase(listUsers));
+//app.post("/users", withDatabase(createUser));
+app.post("/createUser", withDatabase(createUser));
 
 const getRegisteredRoutes = () => {
   type RouterLayer = {

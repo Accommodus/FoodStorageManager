@@ -12,7 +12,7 @@
     "dependencies": {
         "@foodstoragemanager/schema": "*",
         "@tailwindcss/vite": "^4.1.13",
-        "axios": "^1.13.1",
+        "axios": "^1.13.2",
         "react": "^19.2.0",
         "react-dom": "^19.1.1",
         "react-hook-form": "^7.65.0",
