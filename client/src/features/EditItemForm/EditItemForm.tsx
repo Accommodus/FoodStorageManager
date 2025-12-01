@@ -85,16 +85,61 @@ export const EditItemForm = ({ item, onItemUpdated, onCancel }: EditItemFormProp
             setError(null);
             setSuccess(null);
 
-            const client = getSchemaClient();
-            const payload = await client.updateItem(item._id, preparedDraft);
+            if (preparedDraft.caseSize === 0) {
+                const userConfirmed = window.confirm(
+                    'Are you sure you want to delete this item?'
+                );
 
-            if ('error' in payload) {
-                const issues = payload.error.issues ? ` Details: ${JSON.stringify(payload.error.issues)}` : '';
-                throw new Error(`${payload.error.message}${issues}`);
+                if (!userConfirmed) {
+                    setIsSubmitting(false);
+                    return;
+                }
             }
 
-            // Close immediately and refresh - don't wait for success message
-            onItemUpdated?.();
+            // COPILOT === START
+
+            const client = getSchemaClient();
+
+            let payload: unknown;
+
+            if (preparedDraft.caseSize === 0) {
+                // Delete the item when caseSize is set to 0 and the user confirms the deletion
+                payload = await client.deleteItem(item._id);
+            } else {
+                payload = await client.updateItem(item._id, preparedDraft);
+            }
+
+            const isErrorEnvelope = (p: unknown): p is { error: { message?: string; issues?: unknown } } =>
+                Boolean(p && typeof p === 'object' && 'error' in (p as Record<string, unknown>));
+
+            // if server returns NOT_FOUND, consider the item deleted
+            if (preparedDraft.caseSize === 0) {
+                if (isErrorEnvelope(payload)) {
+                    const msg = payload.error.message ?? '';
+                    // If the server reports the item wasn't found, treat as success and refresh
+                    if (msg.toLowerCase().includes('not found')) {
+                        onCancel?.();
+                        setTimeout(() => window.location.reload(), 120);
+                        return;
+                    }
+
+                    const issues = payload.error.issues ? ` Details: ${JSON.stringify(payload.error.issues)}` : '';
+                    throw new Error(`${payload.error.message}${issues}`);
+                }
+
+                // Successful delete; refresh the page
+                onCancel?.();
+                setTimeout(() => window.location.reload(), 120);
+            } else {
+                if (isErrorEnvelope(payload)) {
+                    const issues = payload.error.issues ? ` Details: ${JSON.stringify(payload.error.issues)}` : '';
+                    throw new Error(`${payload.error.message}${issues}`);
+                }
+
+                onItemUpdated?.();
+            }
+            // COPILOT === END
+
         } catch (caughtError) {
             const message = caughtError instanceof Error ? caughtError.message : 'Failed to update item';
             setError(message);
@@ -189,7 +234,7 @@ export const EditItemForm = ({ item, onItemUpdated, onCancel }: EditItemFormProp
                         id="edit-caseSize"
                         value={formData.caseSize || ''}
                         onChange={(e) => handleInputChange('caseSize', e.target.value ? parseInt(e.target.value, 10) : undefined)}
-                        min="1"
+                        min="0"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
