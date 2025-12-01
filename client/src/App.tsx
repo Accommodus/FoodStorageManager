@@ -3,6 +3,7 @@ import AppLayout from './pages/AppLayout.tsx';
 import Inventory from './pages/Inventory.tsx';
 import Users from './pages/Users.tsx';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
+import { RequireAuth } from '@features/auth/RequireAuth';
 
 const App = () => {
     return (
@@ -10,7 +11,14 @@ const App = () => {
             <Routes>
                 <Route index element={<Navigate to="login" replace />} />
                 <Route path="login" element={<Login />} />
-                <Route path="app" element={<AppLayout />}>
+                <Route
+                    path="app"
+                    element={
+                        <RequireAuth>
+                            <AppLayout />
+                        </RequireAuth>
+                    }
+                >
                     <Route
                         index
                         element={<Navigate to="inventory" replace />}

@@ -7,6 +7,8 @@ import {
   type CreateUserResponse,
   type DeleteUserResponse,
   type DeleteItemResponse,
+  type AuthenticateUserPayload,
+  type AuthenticateUserResponse,
   type InventoryLotDraft,
   type InventoryLotResource,
   type ItemDraft,
@@ -16,7 +18,6 @@ import {
   type ListUsersResponse,
   type LocationDraft,
   type LocationResource,
-  type ObjectIdString,
   type RecordStockTransactionResponse,
   type StockTransactionDraft,
   type StockTransactionResource,
@@ -191,6 +192,10 @@ export interface SchemaClient {
     audit: AuditDraft,
     options?: RequestOptions
   ): Promise<CreateAuditResponse>;
+  authenticateUser(
+    credentials: AuthenticateUserPayload,
+    options?: RequestOptions
+  ): Promise<AuthenticateUserResponse>;
   listUsers(options?: RequestOptions): Promise<ListUsersResponse>;
   createUser(
     user: UserDraft,
@@ -513,6 +518,34 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
 
         if (payload && payload.audit) {
           return { audit: payload.audit as AuditResource };
+        }
+
+        return handleFailure(body, response);
+      }
+
+      return handleFailure(body, response);
+    },
+
+    authenticateUser: async (credentials, options) => {
+      const { response, body } = await request("/auth/login", {
+        method: "POST",
+        signal: options?.signal,
+        headers: mergeHeaders(
+          { "Content-Type": JSON_MEDIA_TYPE },
+          options?.headers
+        ),
+        body: toJsonBody(credentials),
+      });
+
+      if (response.ok) {
+        const payload = asObject(body);
+
+        if (isErrorEnvelope(payload)) {
+          return handleFailure(body, response);
+        }
+
+        if (payload && payload.user) {
+          return { user: payload.user as UserResource };
         }
 
         return handleFailure(body, response);

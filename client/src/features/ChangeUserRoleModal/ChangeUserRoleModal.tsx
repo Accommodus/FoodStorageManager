@@ -9,14 +9,15 @@ interface ChangeUserRoleModalProps {
 }
 
 export const ChangeUserRoleModal = ({ user, onRoleChanged, onCancel }: ChangeUserRoleModalProps) => {
-    const [selectedRole, setSelectedRole] = useState<string>(user.role || '');
+    const currentRole = user.role?.[0] ?? '';
+    const [selectedRole, setSelectedRole] = useState<string>(currentRole);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (selectedRole === user.role) {
+        if (selectedRole === currentRole) {
             onCancel?.();
             return;
         }
@@ -44,8 +45,8 @@ export const ChangeUserRoleModal = ({ user, onRoleChanged, onCancel }: ChangeUse
         }
     };
 
-    const currentRoleDisplay = user.role 
-        ? user.role[0].toUpperCase() + user.role.slice(1).toLowerCase()
+    const currentRoleDisplay = currentRole
+        ? currentRole[0].toUpperCase() + currentRole.slice(1).toLowerCase()
         : 'No Role';
 
     return (
@@ -97,7 +98,7 @@ export const ChangeUserRoleModal = ({ user, onRoleChanged, onCancel }: ChangeUse
                     </button>
                     <button
                         type="submit"
-                        disabled={isSubmitting || selectedRole === user.role}
+                        disabled={isSubmitting || selectedRole === currentRole}
                         className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isSubmitting ? 'Updating...' : 'Update Role'}
@@ -107,4 +108,3 @@ export const ChangeUserRoleModal = ({ user, onRoleChanged, onCancel }: ChangeUse
         </div>
     );
 };
-
