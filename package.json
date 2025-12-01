@@ -5,10 +5,11 @@
   "main": "index.js",
   "private": true,
   "scripts": {
-    "dev": "npm run schema && concurrently \"npm run server\" \"npm run client\"",
-    "client": "cd client && npm run dev",
-    "server": "cd server && npm run dev",
-    "schema": "cd schema && npm run build"
+    "dev": "npm run install-all && npm run schema && concurrently \"npm run server\" \"npm run client\"",
+    "install-all": "npm install && npm --workspace=client install && npm --workspace=server install && npm --workspace=schema install",
+    "client": "npm --workspace=client run dev",
+    "server": "npm --workspace=server run dev",
+    "schema": "npm --workspace=schema run build"
   },
   "repository": {
     "type": "git",
