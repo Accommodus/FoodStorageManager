@@ -41,7 +41,12 @@ import {
   authenticateUser,
 } from "./user.js";
 
-const CLIENT_DIST = path.resolve(__dirname, "../../client/dist");
+const CLIENT_DIST = [
+  // When running from TS source (server/src -> ../../client/dist)
+  path.resolve(__dirname, "../../client/dist"),
+  // When running the built output (dist/server/src -> ../../../../client/dist)
+  path.resolve(__dirname, "../../../../client/dist"),
+].find((candidate) => fs.existsSync(candidate));
 
 function connectDB(uri: string): ServerHealth {
   try {
@@ -114,7 +119,7 @@ app.use((req, res, next) => {
   next();
 });
 
-if (fs.existsSync(CLIENT_DIST)) {
+if (CLIENT_DIST) {
   app.use(express.static(CLIENT_DIST));
 }
 
@@ -211,7 +216,7 @@ app.get("/", (req, res) => {
     return getHealth(req, res, connection);
   }
 
-  if (fs.existsSync(CLIENT_DIST)) {
+  if (CLIENT_DIST) {
     return res.sendFile(path.join(CLIENT_DIST, "index.html"));
   }
 
@@ -219,7 +224,7 @@ app.get("/", (req, res) => {
 });
 
 // Fallback to SPA index for non-API routes when the client build exists.
-if (fs.existsSync(CLIENT_DIST)) {
+if (CLIENT_DIST) {
   app.use((req, res, next) => {
     const isApiRoute = req.path.startsWith("/items") ||
       req.path.startsWith("/locations") ||
