@@ -85,7 +85,7 @@ export const createUser: ApiHandler = async (req, res, db) => {
     });
 
     const password =
-      sanitizeString(draft.passwordHash, "user.passwordHash", {
+      sanitizeString(draft.password, "user.password", {
         required: true,
       }) ??
       (() => {

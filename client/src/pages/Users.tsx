@@ -84,19 +84,7 @@ const Users = () => {
         setRefreshToken((prev) => prev + 1);
     };
 
-    const handleCreateUser = async (data: {
-        name: string;
-        email: string;
-        password: string;
-        confirmPassword: string;
-    }) => {
-        const client = getSchemaClient();
-        await client.createUser({
-            name: data.name,
-            email: data.email,
-            password: data.password,
-        });
-
+    const handleUserCreated = () => {
         setShowCreateForm(false);
         setRefreshToken((prev) => prev + 1);
     };
@@ -118,7 +106,7 @@ const Users = () => {
             {showCreateForm && (
                 <div className="mb-8">
                     <CreateUserForm
-                        submitHandler={handleCreateUser}
+                        onUserCreated={handleUserCreated}
                         onCancel={() => setShowCreateForm(false)}
                     />
                 </div>

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import type { CreateUserResponse } from '@foodstoragemanager/schema';
+import { getSchemaClient } from '@lib/schemaClient';
 
 type FormInputs = {
     name: string;
@@ -8,7 +10,7 @@ type FormInputs = {
 };
 
 type CreateUserFormProps = {
-    submitHandler: (data: FormInputs) => Promise<void> | void;
+    onUserCreated?: () => void;
     onCancel?: () => void;
 };
 
@@ -19,7 +21,7 @@ const initialForm: FormInputs = {
     confirmPassword: '',
 };
 
-export const CreateUserForm = ({ submitHandler, onCancel }: CreateUserFormProps) => {
+export const CreateUserForm = ({ onUserCreated, onCancel }: CreateUserFormProps) => {
     const [formData, setFormData] = useState<FormInputs>(initialForm);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -51,15 +53,26 @@ export const CreateUserForm = ({ submitHandler, onCancel }: CreateUserFormProps)
             setIsSubmitting(true);
             setError(null);
 
-            await submitHandler({
+            const client = getSchemaClient();
+            const payload: CreateUserResponse = await client.createUser({
                 name: formData.name.trim(),
                 email: formData.email.trim(),
                 password: formData.password,
-                confirmPassword: formData.confirmPassword,
             });
+
+            if ('error' in payload) {
+                const issues = payload.error.issues
+                    ? ` Details: ${JSON.stringify(payload.error.issues)}`
+                    : '';
+                throw new Error(`${payload.error.message}${issues}`);
+            }
 
             setSuccess('User created successfully!');
             setFormData(initialForm);
+
+            setTimeout(() => {
+                onUserCreated?.();
+            }, 1500);
         } catch (caughtError) {
             const message =
                 caughtError instanceof Error
@@ -162,7 +175,7 @@ export const CreateUserForm = ({ submitHandler, onCancel }: CreateUserFormProps)
                         <button
                             type="button"
                             onClick={onCancel}
-                            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                        className="rounded-md border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
                         >
                             Cancel
                         </button>
