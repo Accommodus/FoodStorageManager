@@ -25,15 +25,35 @@ function toIsoString(value: unknown): string | undefined {
   } else return undefined;
 }
 
-const normalizeRole = (value: unknown): Role => {
-  if (Array.isArray(value) && value.length > 0) {
-    return toRole(value[0]);
+const ensureRole = (value: unknown): Role => {
+  const candidate = Array.isArray(value) && value.length > 0 ? value[0] : value;
+  const normalizedCandidate =
+    typeof candidate === "string" ? candidate.trim().toLowerCase() : candidate;
+
+  const normalized = toRole(normalizedCandidate);
+
+  if (
+    normalizedCandidate !== undefined &&
+    normalizedCandidate !== null &&
+    normalizedCandidate !== "" &&
+    normalized !== normalizedCandidate
+  ) {
+    throw new Error("Invalid role.");
   }
-  return toRole(value);
+
+  if (
+    normalizedCandidate !== undefined &&
+    normalizedCandidate !== null &&
+    typeof normalizedCandidate !== "string"
+  ) {
+    throw new Error("Invalid role.");
+  }
+
+  return normalized;
 };
 
 const serializeUser = (doc: Record<string, unknown>): UserResource => {
-  const role = normalizeRole(doc.roles ?? doc.role);
+  const role = ensureRole(doc.roles ?? doc.role);
   const createdAt: string = toIsoString(doc.createdAt) ?? formatNow();
 
   return {
@@ -112,10 +132,10 @@ export const createUser: ApiHandler = async (req, res, db) => {
     const enabled = typeof draft.enabled === "boolean" ? draft.enabled : true;
 
     const now = new Date();
-    const normalizedRole = normalizeRole(role);
+    const normalizedRole = ensureRole(role);
     document = {
       email,
-      roles: [normalizedRole],
+      role: normalizedRole,
       enabled,
       createdAt: now,
       updatedAt: now,
@@ -211,26 +231,27 @@ export const updateUser: ApiHandler = async (req, res, db) => {
   }
 
   const draft = payload.user as Record<string, unknown>;
-  const update: Record<string, unknown> = {};
+  const updateSet: Record<string, unknown> = {};
+  const updateUnset: Record<string, "" | 0 | true> = {};
 
   try {
     if (draft.name !== undefined) {
       const name = sanitizeString(draft.name, "user.name");
-      update.name = name || null;
+      updateSet.name = name || null;
     }
 
     if (draft.role !== undefined) {
-      // Convert single role to roles array for database
-      const roleValue =
-        typeof draft.role === "string"
-          ? draft.role.trim().toLowerCase()
-          : draft.role;
-      const normalizedRole = normalizeRole(roleValue);
-      update.roles = [normalizedRole];
+      const roleValue = sanitizeString(draft.role, "user.role", {
+        lowercase: true,
+      });
+      if (roleValue !== undefined) {
+        updateSet.role = ensureRole(roleValue);
+        updateUnset.roles = "";
+      }
     }
 
     if (draft.enabled !== undefined) {
-      update.enabled =
+      updateSet.enabled =
         typeof draft.enabled === "boolean" ? draft.enabled : true;
     }
   } catch (error) {
@@ -247,7 +268,18 @@ export const updateUser: ApiHandler = async (req, res, db) => {
       return sendError(res, StatusCodes.NOT_FOUND, "User not found.");
     }
 
-    await collection.updateOne({ _id: userId }, { $set: update });
+    // Ensure the stored role complies with the new schema and migrate any legacy "roles" arrays.
+    updateSet.role = ensureRole(
+      updateSet.role ?? (existing as Record<string, unknown>).role ?? (existing as Record<string, unknown>).roles
+    );
+    updateUnset.roles = "";
+
+    const updateOps: Record<string, unknown> = { $set: updateSet };
+    if (Object.keys(updateUnset).length > 0) {
+      updateOps.$unset = updateUnset;
+    }
+
+    await collection.updateOne({ _id: userId }, updateOps);
     const updated = await collection.findOne({ _id: userId });
 
     if (!updated) {

@@ -10,8 +10,8 @@ type UserItemProps = {
 
 export const UserItem = ({ user, onEditUser, onDeleteUser }: UserItemProps) => {
     const role = useMemo(() => {
-        const currentRole = user.role?.[0];
-        if (!currentRole) return '';
+        const currentRole = user.role;
+        if (!currentRole) return 'No Role';
 
         return currentRole[0].toUpperCase() + currentRole.slice(1).toLowerCase();
     }, [user.role]);
