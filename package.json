@@ -6,9 +6,11 @@
   "private": true,
   "scripts": {
     "dev": "npm run schema && concurrently \"npm run server\" \"npm run client\"",
-    "client": "cd client && npm run dev",
-    "server": "cd server && npm run dev",
-    "schema": "cd schema && npm run build"
+    "build": "npm run schema && npm --workspace=server run build && npm --workspace=client run build",
+    "start": "npm run build && npm --workspace=server run start",
+    "client": "npm --workspace=client run dev",
+    "server": "npm --workspace=server run dev",
+    "schema": "npm --workspace=schema run build"
   },
   "repository": {
     "type": "git",

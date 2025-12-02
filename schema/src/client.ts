@@ -5,17 +5,24 @@ import {
   type CreateItemResponse,
   type CreateLocationResponse,
   type CreateUserResponse,
+  type DeleteUserResponse,
+  type DeleteItemResponse,
+  type AuthenticateUserPayload,
+  type AuthenticateUserResponse,
   type InventoryLotDraft,
   type InventoryLotResource,
   type ItemDraft,
   type ItemResource,
   type ListItemsResponse,
+  type ListLocationsResponse,
   type ListUsersResponse,
   type LocationDraft,
   type LocationResource,
   type RecordStockTransactionResponse,
   type StockTransactionDraft,
   type StockTransactionResource,
+  type UpdateItemResponse,
+  type UpdateUserResponse,
   type UpsertInventoryLotResponse,
   type UserDraft,
   type UserResource,
@@ -124,10 +131,7 @@ const tryParseJson = async (response: Response) => {
   }
 };
 
-const extractError = (
-  body: unknown,
-  fallback: string
-): ApiErrorPayload => {
+const extractError = (body: unknown, fallback: string): ApiErrorPayload => {
   if (
     body &&
     typeof body === "object" &&
@@ -165,6 +169,13 @@ export interface SchemaClient {
     item: ItemDraft,
     options?: RequestOptions
   ): Promise<CreateItemResponse>;
+  updateItem(
+    id: string,
+    item: Partial<ItemDraft>,
+    options?: RequestOptions
+  ): Promise<UpdateItemResponse>;
+  deleteItem(id: string, options?: RequestOptions): Promise<DeleteItemResponse>;
+  listLocations(options?: RequestOptions): Promise<ListLocationsResponse>;
   createLocation(
     location: LocationDraft,
     options?: RequestOptions
@@ -181,20 +192,28 @@ export interface SchemaClient {
     audit: AuditDraft,
     options?: RequestOptions
   ): Promise<CreateAuditResponse>;
+  authenticateUser(
+    credentials: AuthenticateUserPayload,
+    options?: RequestOptions
+  ): Promise<AuthenticateUserResponse>;
   listUsers(options?: RequestOptions): Promise<ListUsersResponse>;
   createUser(
     user: UserDraft,
     options?: RequestOptions
   ): Promise<CreateUserResponse>;
+  updateUser(
+    id: string,
+    user: Partial<UserDraft>,
+    options?: RequestOptions
+  ): Promise<UpdateUserResponse>;
+  deleteUser(id: string, options?: RequestOptions): Promise<DeleteUserResponse>;
 }
 
 export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
   const { baseUrl, defaultHeaders, fetchFn } = init;
   const runtimeFetch =
     fetchFn ??
-    (typeof fetch === "function"
-      ? fetch.bind(globalThis)
-      : undefined);
+    (typeof fetch === "function" ? fetch.bind(globalThis) : undefined);
 
   if (!runtimeFetch) {
     throw new Error(
@@ -219,9 +238,7 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
     return { response, body };
   };
 
-  const asObject = (
-    value: unknown
-  ): Record<string, unknown> | undefined =>
+  const asObject = (value: unknown): Record<string, unknown> | undefined =>
     value && typeof value === "object"
       ? (value as Record<string, unknown>)
       : undefined;
@@ -231,10 +248,7 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
   ): value is Record<string, unknown> & { error: unknown } =>
     Boolean(value && "error" in value);
 
-  const handleFailure = (
-    body: unknown,
-    response: Response
-  ) => {
+  const handleFailure = (body: unknown, response: Response) => {
     const fallback =
       response.statusText && response.statusText.trim().length > 0
         ? response.statusText
@@ -307,6 +321,89 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
 
         if (payload && payload.item) {
           return { item: payload.item as ItemResource };
+        }
+
+        return handleFailure(body, response);
+      }
+
+      return handleFailure(body, response);
+    },
+
+    updateItem: async (itemId, item, options) => {
+      const { response, body } = await request(`/items/${itemId}`, {
+        method: "PUT",
+        signal: options?.signal,
+        headers: mergeHeaders(
+          { "Content-Type": JSON_MEDIA_TYPE },
+          options?.headers
+        ),
+        body: toJsonBody({ item }),
+      });
+
+      if (response.ok) {
+        const payload = asObject(body);
+
+        if (isErrorEnvelope(payload)) {
+          return handleFailure(body, response);
+        }
+
+        if (payload && payload.item) {
+          return { item: payload.item as ItemResource };
+        }
+
+        return handleFailure(body, response);
+      }
+
+      return handleFailure(body, response);
+    },
+
+    // Based on "deleteUser"
+    deleteItem: async (itemId: string, options?: RequestOptions) => {
+      const { response, body } = await request(`/items/${itemId}`, {
+        method: "DELETE",
+        signal: options?.signal,
+        headers: options?.headers,
+      });
+
+      if (response.ok) {
+        const payload = asObject(body);
+
+        if (isErrorEnvelope(payload)) {
+          return handleFailure(body, response);
+        }
+
+        return { deleted: true };
+      }
+
+      return handleFailure(body, response);
+    },
+
+    listLocations: async (options) => {
+      const { response, body } = await request("/locations", {
+        method: "GET",
+        signal: options?.signal,
+        headers: options?.headers,
+      });
+
+      if (response.status === 204) {
+        return { locations: [] as LocationResource[] };
+      }
+
+      if (response.ok) {
+        const payload = asObject(body);
+
+        if (isErrorEnvelope(payload)) {
+          return handleFailure(body, response);
+        }
+
+        const maybeLocations = payload?.locations;
+
+        if (Array.isArray(maybeLocations)) {
+          return { locations: maybeLocations as LocationResource[] };
+        }
+
+        if (maybeLocations === undefined) {
+          return { locations: [] as LocationResource[] };
         }
 
         return handleFailure(body, response);
@@ -429,6 +526,34 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
       return handleFailure(body, response);
     },
 
+    authenticateUser: async (credentials, options) => {
+      const { response, body } = await request("/auth/login", {
+        method: "POST",
+        signal: options?.signal,
+        headers: mergeHeaders(
+          { "Content-Type": JSON_MEDIA_TYPE },
+          options?.headers
+        ),
+        body: toJsonBody(credentials),
+      });
+
+      if (response.ok) {
+        const payload = asObject(body);
+
+        if (isErrorEnvelope(payload)) {
+          return handleFailure(body, response);
+        }
+
+        if (payload && payload.user) {
+          return { user: payload.user as UserResource };
+        }
+
+        return handleFailure(body, response);
+      }
+
+      return handleFailure(body, response);
+    },
+
     listUsers: async (options) => {
       const { response, body } = await request("/users", {
         method: "GET",
@@ -486,6 +611,54 @@ export const createSchemaClient = (init: ClientInit = {}): SchemaClient => {
         }
 
         return handleFailure(body, response);
+      }
+
+      return handleFailure(body, response);
+    },
+
+    updateUser: async (userId, user, options) => {
+      const { response, body } = await request(`/users/${userId}`, {
+        method: "PUT",
+        signal: options?.signal,
+        headers: mergeHeaders(
+          { "Content-Type": JSON_MEDIA_TYPE },
+          options?.headers
+        ),
+        body: toJsonBody({ user }),
+      });
+
+      if (response.ok) {
+        const payload = asObject(body);
+
+        if (isErrorEnvelope(payload)) {
+          return handleFailure(body, response);
+        }
+
+        if (payload && payload.user) {
+          return { user: payload.user as UserResource };
+        }
+
+        return handleFailure(body, response);
+      }
+
+      return handleFailure(body, response);
+    },
+
+    deleteUser: async (userId: string, options?: RequestOptions) => {
+      const { response, body } = await request(`/users/${userId}`, {
+        method: "DELETE",
+        signal: options?.signal,
+        headers: options?.headers,
+      });
+
+      if (response.ok) {
+        const payload = asObject(body);
+
+        if (isErrorEnvelope(payload)) {
+          return handleFailure(body, response);
+        }
+
+        return { deleted: true };
       }
 
       return handleFailure(body, response);

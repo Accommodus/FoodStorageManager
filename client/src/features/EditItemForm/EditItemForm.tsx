@@ -1,109 +1,75 @@
 import { useState, useEffect } from 'react';
-import type { ItemDraft, CreateItemResponse, LocationResource, ListLocationsResponse } from '@foodstoragemanager/schema';
+import type { ItemDraft, ItemResource } from '@foodstoragemanager/schema';
 import { getSchemaClient } from '@lib/schemaClient';
 
-interface CreateItemFormProps {
-    onItemCreated?: () => void;
+interface EditItemFormProps {
+    item: ItemResource;
+    onItemUpdated?: () => void;
     onCancel?: () => void;
 }
 
 /// Function definitions provided by Copilot and logic  was filled in by Luis Goicoechea
 
-
-export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps) => {
+export const EditItemForm = ({ item, onItemUpdated, onCancel }: EditItemFormProps) => {
     const [formData, setFormData] = useState<ItemDraft>({
-        name: '',
-        locationId: '',
-        upc: '',
-        category: '',
-        tags: [],
-        unit: 'ea',
-        caseSize: undefined,
-        expiresAt: undefined,
-        shelfLifeDays: undefined,
-        allergens: [],
-        isActive: true,
+        name: item.name || '',
+        locationId: item.locationId || '',
+        upc: item.upc || '',
+        category: item.category || '',
+        tags: item.tags || [],
+        unit: item.unit || 'ea',
+        caseSize: item.caseSize,
+        expiresAt: item.expiresAt,
+        shelfLifeDays: item.shelfLifeDays,
+        allergens: item.allergens || [],
+        isActive: item.isActive ?? true,
     });
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
-    const [locations, setLocations] = useState<LocationResource[]>([]);
-    const [isLoadingLocations, setIsLoadingLocations] = useState(true);
 
-    // Store raw string values for tags and allergens to allow typing commas
-    const [tagsInput, setTagsInput] = useState('');
-    const [allergensInput, setAllergensInput] = useState('');
+    const [tagsInput, setTagsInput] = useState(
+        item.tags && item.tags.length > 0 ? item.tags.join(', ') : ''
+    );
+    const [allergensInput, setAllergensInput] = useState(
+        item.allergens && item.allergens.length > 0 ? item.allergens.join(', ') : ''
+    );
 
     useEffect(() => {
-        const loadLocations = async () => {
-            try {
-                setIsLoadingLocations(true);
-                const client = getSchemaClient();
-                const payload: ListLocationsResponse = await client.listLocations();
-
-                if ('error' in payload) {
-                    const issues =
-                        payload.error.issues !== undefined
-                            ? ` Details: ${JSON.stringify(payload.error.issues)}`
-                            : '';
-                    console.error(`Failed to load locations: ${payload.error.message}${issues}`);
-                    setLocations([]);
-                    return;
-                }
-
-                setLocations(payload.locations ?? []);
-            } catch (caughtError) {
-                const message =
-                    caughtError instanceof Error
-                        ? caughtError.message
-                        : 'Unable to fetch locations.';
-                console.error(message);
-                setLocations([]);
-            } finally {
-                setIsLoadingLocations(false);
-            }
-        };
-
-        void loadLocations();
-    }, []);
-
+        setFormData({
+            name: item.name || '',
+            locationId: item.locationId || '',
+            upc: item.upc || '',
+            category: item.category || '',
+            tags: item.tags || [],
+            unit: item.unit || 'ea',
+            caseSize: item.caseSize,
+            expiresAt: item.expiresAt,
+            shelfLifeDays: item.shelfLifeDays,
+            allergens: item.allergens || [],
+            isActive: item.isActive ?? true,
+        });
+        setTagsInput(item.tags && item.tags.length > 0 ? item.tags.join(', ') : '');
+        setAllergensInput(item.allergens && item.allergens.length > 0 ? item.allergens.join(', ') : '');
+    }, [item]);
 
     const handleInputChange = (
         field: keyof ItemDraft,
         value: string | number | boolean | string[] | undefined
     ) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: value,
-        }));
-    };
-
-    const handleTagsChange = (value: string) => {
-        setTagsInput(value);
-        // Only process when user finishes typing (on blur) or submits
-    };
-
-    const handleAllergensChange = (value: string) => {
-        setAllergensInput(value);
-        // Only process when user finishes typing (on blur) or submits
+        setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const tags = tagsInput
-            .split(',')
-            .map(tag => tag.trim())
-            .filter(tag => tag.length > 0);
-        const allergens = allergensInput
-            .split(',')
-            .map(allergen => allergen.trim())
-            .filter(allergen => allergen.length > 0);
+        const tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+        const allergens = allergensInput.split(',').map(allergen => allergen.trim()).filter(allergen => allergen.length > 0);
 
         const preparedDraft: ItemDraft = {
             ...formData,
-            locationId: formData.locationId.trim(),
+            locationId: item.locationId,
             tags,
             allergens,
             name: formData.name.trim(),
@@ -111,8 +77,8 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
             category: formData.category?.trim() || undefined,
         };
 
-        if (!preparedDraft.name || !preparedDraft.locationId) {
-            setError('Name and location are required');
+        if (!preparedDraft.name) {
+            setError('Name is required');
             return;
         }
 
@@ -121,49 +87,72 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
             setError(null);
             setSuccess(null);
 
-            const client = getSchemaClient();
-            const payload: CreateItemResponse = await client.createItem(preparedDraft);
+            if (preparedDraft.caseSize === 0) {
+                const userConfirmed = window.confirm(
+                    'Are you sure you want to delete this item?'
+                );
 
-            if ('error' in payload) {
-                const issues = payload.error.issues
-                    ? ` Details: ${JSON.stringify(payload.error.issues)}`
-                    : '';
-                throw new Error(`${payload.error.message}${issues}`);
+                if (!userConfirmed) {
+                    setIsSubmitting(false);
+                    return;
+                }
             }
 
-            setSuccess('Item created successfully!');
-            setFormData({
-                name: '',
-                locationId: '',
-                upc: '',
-                category: '',
-                tags: [],
-                unit: 'ea',
-                caseSize: undefined,
-                expiresAt: undefined,
-                shelfLifeDays: undefined,
-                allergens: [],
-                isActive: true,
-            });
-            setTagsInput('');
-            setAllergensInput('');
+            // COPILOT === START
 
-            // Call the callback after a short delay to show success message
-            setTimeout(() => {
-                onItemCreated?.();
-            }, 1500);
+            const client = getSchemaClient();
+
+            let payload: unknown;
+
+            if (preparedDraft.caseSize === 0) {
+                // Delete the item when caseSize is set to 0 and the user confirms the deletion
+                payload = await client.deleteItem(item._id);
+            } else {
+                payload = await client.updateItem(item._id, preparedDraft);
+            }
+
+            const isErrorEnvelope = (p: unknown): p is { error: { message?: string; issues?: unknown } } =>
+                Boolean(p && typeof p === 'object' && 'error' in (p as Record<string, unknown>));
+
+            // if server returns NOT_FOUND, consider the item deleted
+            if (preparedDraft.caseSize === 0) {
+                if (isErrorEnvelope(payload)) {
+                    const msg = payload.error.message ?? '';
+                    // If the server reports the item wasn't found, treat as success and refresh
+                    if (msg.toLowerCase().includes('not found')) {
+                        onCancel?.();
+                        setTimeout(() => window.location.reload(), 120);
+                        return;
+                    }
+
+                    const issues = payload.error.issues ? ` Details: ${JSON.stringify(payload.error.issues)}` : '';
+                    throw new Error(`${payload.error.message}${issues}`);
+                }
+
+                // Successful delete; refresh the page
+                onCancel?.();
+                setTimeout(() => window.location.reload(), 120);
+            } else {
+                if (isErrorEnvelope(payload)) {
+                    const issues = payload.error.issues ? ` Details: ${JSON.stringify(payload.error.issues)}` : '';
+                    throw new Error(`${payload.error.message}${issues}`);
+                }
+
+                onItemUpdated?.();
+            }
+            // COPILOT === END
+
         } catch (caughtError) {
-            const message = caughtError instanceof Error ? caughtError.message : 'Failed to create item';
+            const message = caughtError instanceof Error ? caughtError.message : 'Failed to update item';
             setError(message);
         } finally {
             setIsSubmitting(false);
         }
     };
 
-
     return (
         <div className="p-6 bg-white rounded-lg shadow-md">
-            <h2 className="text-2xl font-bold mb-6 text-gray-800">Create New Item</h2>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800">Edit Item</h2>
             
             {error && (
                 <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -178,14 +167,13 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Name - Required */}
                 <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="edit-name" className="block text-sm font-medium text-gray-700 mb-1">
                         Name *
                     </label>
                     <input
                         type="text"
-                        id="name"
+                        id="edit-name"
                         value={formData.name}
                         onChange={(e) => handleInputChange('name', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -193,58 +181,26 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
                     />
                 </div>
 
-                {/* Location - Required */}
                 <div>
-                    <label htmlFor="locationId" className="block text-sm font-medium text-gray-700 mb-1">
-                        Location *
-                    </label>
-                    {isLoadingLocations ? (
-                        <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
-                            <p className="text-sm text-gray-500">Loading locations...</p>
-                        </div>
-                    ) : (
-                        <select
-                            id="locationId"
-                            value={formData.locationId}
-                            onChange={(e) => handleInputChange('locationId', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            required
-                        >
-                            <option value="">Select a location</option>
-                            {locations.map((location) => (
-                                <option key={location._id} value={location._id}>
-                                    {location.name} ({location.type})
-                                </option>
-                            ))}
-                        </select>
-                    )}
-                    {locations.length === 0 && !isLoadingLocations && (
-                        <p className="text-xs text-red-500 mt-1">No locations available. Please create a location first.</p>
-                    )}
-                </div>
-
-                {/* UPC */}
-                <div>
-                    <label htmlFor="upc" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="edit-upc" className="block text-sm font-medium text-gray-700 mb-1">
                         UPC/Barcode
                     </label>
                     <input
                         type="text"
-                        id="upc"
+                        id="edit-upc"
                         value={formData.upc || ''}
                         onChange={(e) => handleInputChange('upc', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
-                {/* Category */}
                 <div>
-                    <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="edit-category" className="block text-sm font-medium text-gray-700 mb-1">
                         Category
                     </label>
                     <input
                         type="text"
-                        id="category"
+                        id="edit-category"
                         value={formData.category || ''}
                         onChange={(e) => handleInputChange('category', e.target.value)}
                         placeholder="e.g., Produce, Grains, Dairy"
@@ -252,13 +208,12 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
                     />
                 </div>
 
-                {/* Unit */}
                 <div>
-                    <label htmlFor="unit" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="edit-unit" className="block text-sm font-medium text-gray-700 mb-1">
                         Unit
                     </label>
                     <select
-                        id="unit"
+                        id="edit-unit"
                         value={formData.unit || 'ea'}
                         onChange={(e) => handleInputChange('unit', e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -272,29 +227,27 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
                     </select>
                 </div>
 
-                {/* Case Size */}
                 <div>
-                    <label htmlFor="caseSize" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="edit-caseSize" className="block text-sm font-medium text-gray-700 mb-1">
                         Case Size
                     </label>
                     <input
                         type="number"
-                        id="caseSize"
+                        id="edit-caseSize"
                         value={formData.caseSize || ''}
                         onChange={(e) => handleInputChange('caseSize', e.target.value ? parseInt(e.target.value, 10) : undefined)}
-                        min="1"
+                        min="0"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
-                {/* Shelf Life Days */}
                 <div>
-                    <label htmlFor="shelfLifeDays" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="edit-shelfLifeDays" className="block text-sm font-medium text-gray-700 mb-1">
                         Shelf Life (Days)
                     </label>
                     <input
                         type="number"
-                        id="shelfLifeDays"
+                        id="edit-shelfLifeDays"
                         value={formData.shelfLifeDays || ''}
                         onChange={(e) => handleInputChange('shelfLifeDays', e.target.value ? parseInt(e.target.value, 10) : undefined)}
                         min="1"
@@ -302,74 +255,69 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
                     />
                 </div>
 
-                {/* Expires At */}
                 <div>
-                    <label htmlFor="expiresAt" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="edit-expiresAt" className="block text-sm font-medium text-gray-700 mb-1">
                         Expiration Date
                     </label>
                     <input
                         type="date"
-                        id="expiresAt"
+                        id="edit-expiresAt"
                         value={formData.expiresAt ? formData.expiresAt.split('T')[0] : ''}
                         onChange={(e) => handleInputChange('expiresAt', e.target.value ? new Date(e.target.value).toISOString() : undefined)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                 </div>
 
-                {/* Tags */}
                 <div>
-                    <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="edit-tags" className="block text-sm font-medium text-gray-700 mb-1">
                         Tags
                     </label>
                     <input
                         type="text"
-                        id="tags"
+                        id="edit-tags"
                         value={tagsInput}
-                        onChange={(e) => handleTagsChange(e.target.value)}
+                        onChange={(e) => setTagsInput(e.target.value)}
                         placeholder="e.g., gluten-free, organic, shelf-stable"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">Separate multiple tags with commas</p>
                 </div>
 
-                {/* Allergens */}
                 <div>
-                    <label htmlFor="allergens" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="edit-allergens" className="block text-sm font-medium text-gray-700 mb-1">
                         Allergens
                     </label>
                     <input
                         type="text"
-                        id="allergens"
+                        id="edit-allergens"
                         value={allergensInput}
-                        onChange={(e) => handleAllergensChange(e.target.value)}
+                        onChange={(e) => setAllergensInput(e.target.value)}
                         placeholder="e.g., nuts, dairy, gluten"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     />
                     <p className="text-xs text-gray-500 mt-1">Separate multiple allergens with commas</p>
                 </div>
 
-                {/* Active Status */}
                 <div className="flex items-center">
                     <input
                         type="checkbox"
-                        id="isActive"
+                        id="edit-isActive"
                         checked={formData.isActive ?? true}
                         onChange={(e) => handleInputChange('isActive', e.target.checked)}
                         className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                     />
-                    <label htmlFor="isActive" className="ml-2 text-sm text-gray-700">
+                    <label htmlFor="edit-isActive" className="ml-2 text-sm text-gray-700">
                         Item is active
                     </label>
                 </div>
 
-                {/* Form Actions */}
                 <div className="flex gap-4 pt-4">
                     <button
                         type="submit"
                         disabled={isSubmitting}
                         className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isSubmitting ? 'Creating...' : 'Create Item'}
+                        {isSubmitting ? 'Updating...' : 'Update Item'}
                     </button>
                     {onCancel && (
                         <button
@@ -385,3 +333,4 @@ export const CreateItemForm = ({ onItemCreated, onCancel }: CreateItemFormProps)
         </div>
     );
 };
+

@@ -264,3 +264,213 @@ export const listItems: ApiHandler = async (req, res, db) => {
     });
   }
 };
+
+export const updateItem: ApiHandler = async (req, res, db) => {
+  if (db.readyState !== 1) {
+    res.redirect("/health");
+    return;
+  }
+
+  const { id } = req.params;
+  const payload = req.body;
+
+  try {
+    assertSafePayload(payload);
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid item payload.";
+    return sendError(res, StatusCodes.BAD_REQUEST, message);
+  }
+
+  if (!isPlainObject(payload) || !isPlainObject(payload.item)) {
+    return sendError(
+      res,
+      StatusCodes.BAD_REQUEST,
+      "Invalid item request payload."
+    );
+  }
+
+  let itemId: Types.ObjectId;
+  try {
+    itemId = sanitizeObjectId(id, "item.id");
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid item ID.";
+    return sendError(res, StatusCodes.BAD_REQUEST, message);
+  }
+
+  const draft = payload.item as Record<string, unknown>;
+  const update: Record<string, unknown> = {};
+
+  try {
+    if (draft.name !== undefined) {
+      const name = sanitizeString(draft.name, "item.name", {
+        required: true,
+      });
+      if (!name) {
+        throw new Error("item.name cannot be empty.");
+      }
+      update.name = name;
+    }
+
+    if (draft.locationId !== undefined) {
+      update.locationId = sanitizeObjectId(
+        draft.locationId,
+        "item.locationId"
+      );
+    }
+
+    if (draft.unit !== undefined) {
+      update.unit =
+        sanitizeString(draft.unit, "item.unit") ?? "ea";
+    }
+
+    if (draft.upc !== undefined) {
+      const upc = sanitizeString(draft.upc, "item.upc");
+      update.upc = upc || null;
+    }
+
+    if (draft.category !== undefined) {
+      const category = sanitizeString(draft.category, "item.category");
+      update.category = category || null;
+    }
+
+    if (draft.note !== undefined) {
+      const note = sanitizeString(draft.note, "item.note");
+      update.note = note || null;
+    }
+
+    if (draft.tags !== undefined) {
+      const tags = sanitizeStringArray(draft.tags, "item.tags");
+      update.tags = tags || null;
+    }
+
+    if (draft.allergens !== undefined) {
+      const allergens = sanitizeStringArray(
+        draft.allergens,
+        "item.allergens"
+      );
+      update.allergens = allergens || null;
+    }
+
+    if (draft.caseSize !== undefined) {
+      update.caseSize = sanitizeNumber(
+        draft.caseSize,
+        "item.caseSize",
+        { min: 0 }
+      );
+    }
+
+    if (draft.shelfLifeDays !== undefined) {
+      update.shelfLifeDays = sanitizeNumber(
+        draft.shelfLifeDays,
+        "item.shelfLifeDays",
+        { min: 0 }
+      );
+    }
+
+    if (draft.expiresAt !== undefined) {
+      const expiresAt = sanitizeOptionalDate(
+        draft.expiresAt,
+        "item.expiresAt"
+      );
+      update.expiresAt = expiresAt || null;
+    }
+
+    if (draft.isActive !== undefined) {
+      update.isActive =
+        typeof draft.isActive === "boolean" ? draft.isActive : true;
+    }
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Invalid item payload.";
+    return sendError(res, StatusCodes.BAD_REQUEST, message);
+  }
+
+  if (Object.keys(update).length === 0) {
+    return sendError(
+      res,
+      StatusCodes.BAD_REQUEST,
+      "No fields to update."
+    );
+  }
+
+  try {
+    const collection = db.collection(COLLECTION);
+    update.updatedAt = new Date();
+
+    const result = await collection.findOneAndUpdate(
+      { _id: itemId },
+      { $set: update },
+      { returnDocument: "after" }
+    );
+
+    // Check if document was found and updated
+    if (!result) {
+      return sendError(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Item not found."
+      );
+    }
+
+    // If value is null, the document wasn't found, but try to fetch it anyway
+    let updatedDoc = result.value;
+    if (!updatedDoc) {
+      // Try to fetch the document directly in case findOneAndUpdate didn't return it
+      updatedDoc = await collection.findOne({ _id: itemId });
+      if (!updatedDoc) {
+        return sendError(
+          res,
+          StatusCodes.NOT_FOUND,
+          "Item not found."
+        );
+      }
+    }
+
+    return sendSuccess(res, StatusCodes.OK, {
+      item: serializeItem(updatedDoc as Record<string, unknown>),
+    });
+  } catch (error) {
+    return handleDatabaseError(res, error, {
+      fallbackMessage: "Failed to update item.",
+    });
+  }
+};
+
+// COPILOT ADDED FUNCTION BELOW
+
+export const deleteItem: ApiHandler = async (req, res, db) => {
+  if (db.readyState !== 1) {
+    res.redirect("/health");
+    return;
+  }
+
+  const { id } = req.params;
+
+  let itemId: Types.ObjectId;
+  try {
+    itemId = sanitizeObjectId(id, "item.id");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Invalid item ID.";
+    return sendError(res, StatusCodes.BAD_REQUEST, message);
+  }
+
+  try {
+    const collection = db.collection(COLLECTION);
+    const result = await collection.findOneAndDelete({ _id: itemId });
+
+    if (!result || !result.value) {
+      return sendError(res, StatusCodes.NOT_FOUND, "Item not found.");
+    }
+
+    return sendSuccess(res, StatusCodes.OK, {
+      item: serializeItem(result.value as Record<string, unknown>),
+    });
+  } catch (error) {
+    return handleDatabaseError(res, error, {
+      fallbackMessage: "Failed to delete item.",
+    });
+  }
+};
+// END COPILOT ADDED FUNCTION

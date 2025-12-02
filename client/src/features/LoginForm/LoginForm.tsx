@@ -3,7 +3,9 @@ import type { SubmitHandler } from 'react-hook-form';
 import { BiSolidEnvelope, BiSolidLockAlt } from 'react-icons/bi';
 
 type LoginFormProps = {
-    submitHandler: (data: FormInputs) => void;
+    submitHandler: (data: FormInputs) => Promise<void> | void;
+    isSubmitting?: boolean;
+    errorMessage?: string | null;
 };
 
 type FormInputs = {
@@ -11,11 +13,11 @@ type FormInputs = {
     password: string;
 };
 
-export const LoginForm = ({ submitHandler }: LoginFormProps) => {
+export const LoginForm = ({ submitHandler, isSubmitting = false, errorMessage }: LoginFormProps) => {
     const { register, handleSubmit } = useForm<FormInputs>();
 
-    const onSubmit: SubmitHandler<FormInputs> = (data) => {
-        submitHandler(data);
+    const onSubmit: SubmitHandler<FormInputs> = async (data) => {
+        await submitHandler(data);
     };
 
     return (
@@ -29,6 +31,9 @@ export const LoginForm = ({ submitHandler }: LoginFormProps) => {
                     className="bg-neutral-150 w-full rounded-lg py-2 pr-4 pl-10 text-lg text-neutral-900"
                     type="email"
                     placeholder="Email"
+                    autoComplete="email"
+                    required
+                    disabled={isSubmitting}
                     {...register('email')}
                 />
             </div>
@@ -38,15 +43,24 @@ export const LoginForm = ({ submitHandler }: LoginFormProps) => {
                     className="bg-neutral-150 w-full rounded-lg py-2 pr-4 pl-10 text-lg text-neutral-900"
                     type="password"
                     placeholder="Password"
+                    autoComplete="current-password"
+                    required
+                    disabled={isSubmitting}
                     {...register('password')}
                 />
             </div>
             <button
-                className="bg-primary-300 text-md mt-8 rounded-lg px-4 py-2"
+                className="bg-primary-300 text-md mt-8 rounded-lg px-4 py-2 disabled:cursor-not-allowed disabled:opacity-80"
                 type="submit"
+                disabled={isSubmitting}
             >
-                Login
+                {isSubmitting ? 'Signing in...' : 'Login'}
             </button>
+            {errorMessage && (
+                <p className="text-center text-sm font-medium text-red-600" role="alert">
+                    {errorMessage}
+                </p>
+            )}
         </form>
     );
 };

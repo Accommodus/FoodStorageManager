@@ -1,25 +1,52 @@
 import * as path from "node:path";
 import * as url from "node:url";
+import * as fs from "node:fs";
 import dotenv from "dotenv";
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-dotenv.config({
-  path: path.resolve(__dirname, "../../.env"),
-  override: true,
-});
+const envPaths = [
+  // When running from TS source
+  path.resolve(__dirname, "../../.env"),
+  // When running from the built output (dist/server/src -> ../../../../.env)
+  path.resolve(__dirname, "../../../../.env"),
+];
+
+for (const candidate of envPaths) {
+  if (fs.existsSync(candidate)) {
+    dotenv.config({
+      path: candidate,
+      override: true,
+    });
+    break;
+  }
+}
 
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import { ApiHandler, ServerHealth } from "./types";
-import { getHealth } from "./health";
-import { createItem, listItems } from "./item";
-import { upsertLot } from "./inventory";
-import { recordTransaction } from "./transaction";
-import { createAudit } from "./audit";
-import { createUser, listUsers } from "./user";
+import { ApiHandler, ServerHealth } from "./types.js";
+import { getHealth } from "./health.js";
+import { createItem, listItems, updateItem, deleteItem } from "./item.js";
+import { createLocation, listLocations } from "./location.js";
+import { upsertLot } from "./inventory.js";
+import { recordTransaction } from "./transaction.js";
+import { createAudit } from "./audit.js";
+import {
+  createUser,
+  listUsers,
+  updateUser,
+  deleteUser,
+  authenticateUser,
+} from "./user.js";
+
+const CLIENT_DIST = [
+  // When running from TS source (server/src -> ../../client/dist)
+  path.resolve(__dirname, "../../client/dist"),
+  // When running the built output (dist/server/src -> ../../../../client/dist)
+  path.resolve(__dirname, "../../../../client/dist"),
+].find((candidate) => fs.existsSync(candidate));
 
 function connectDB(uri: string): ServerHealth {
   try {
@@ -92,6 +119,10 @@ app.use((req, res, next) => {
   next();
 });
 
+if (CLIENT_DIST) {
+  app.use(express.static(CLIENT_DIST));
+}
+
 const withDatabase =
   (handler: ApiHandler) =>
   async (req: express.Request, res: express.Response) => {
@@ -105,11 +136,18 @@ const withDatabase =
 app.get("/items", withDatabase(listItems));
 app.post("/items", withDatabase(createItem));
 app.post("/item", withDatabase(createItem));
+app.put("/items/:id", withDatabase(updateItem));
+app.delete("/items/:id", withDatabase(deleteItem));
+app.get("/locations", withDatabase(listLocations));
+app.post("/locations", withDatabase(createLocation));
 app.put("/inventory/lots", withDatabase(upsertLot));
 app.post("/stock-transactions", withDatabase(recordTransaction));
 app.post("/audits", withDatabase(createAudit));
 app.get("/users", withDatabase(listUsers));
 app.post("/users", withDatabase(createUser));
+app.put("/users/:id", withDatabase(updateUser));
+app.delete("/users/:id", withDatabase(deleteUser));
+app.post("/auth/login", withDatabase(authenticateUser));
 
 const getRegisteredRoutes = () => {
   type RouterLayer = {
@@ -177,8 +215,34 @@ app.get("/", (req, res) => {
   if (!connection.ok) {
     return getHealth(req, res, connection);
   }
+
+  if (CLIENT_DIST) {
+    return res.sendFile(path.join(CLIENT_DIST, "index.html"));
+  }
+
   res.status(200).send("server is running.");
 });
+
+// Fallback to SPA index for non-API routes when the client build exists.
+if (CLIENT_DIST) {
+  app.use((req, res, next) => {
+    const isApiRoute = req.path.startsWith("/items") ||
+      req.path.startsWith("/locations") ||
+      req.path.startsWith("/inventory") ||
+      req.path.startsWith("/stock-transactions") ||
+      req.path.startsWith("/audits") ||
+      req.path.startsWith("/users") ||
+      req.path.startsWith("/auth") ||
+      req.path.startsWith("/routes") ||
+      req.path === "/health";
+
+    if (isApiRoute) {
+      return next();
+    }
+
+    return res.sendFile(path.join(CLIENT_DIST, "index.html"));
+  });
+}
 
 app.listen(port, () => {
   console.log(`Server is running on PORT: ${port}`);

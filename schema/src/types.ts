@@ -48,7 +48,9 @@ export interface ItemResource {
 }
 
 export type CreateItemResponse = ApiResponse<{ item: ItemResource }>;
+export type DeleteItemResponse = ApiResponse<{ deleted: boolean }>;
 export type ListItemsResponse = ApiResponse<{ items: ItemResource[] }>;
+export type UpdateItemResponse = ApiResponse<{ item: ItemResource }>;
 
 export interface AddressDraft {
   line1: string;
@@ -70,7 +72,12 @@ export interface LocationResource extends LocationDraft {
   updatedAt?: ISODateString;
 }
 
-export type CreateLocationResponse = ApiResponse<{ location: LocationResource }>;
+export type CreateLocationResponse = ApiResponse<{
+  location: LocationResource;
+}>;
+export type ListLocationsResponse = ApiResponse<{
+  locations: LocationResource[];
+}>;
 
 export interface InventoryLotDraft {
   itemId: ObjectIdString;
@@ -97,7 +104,9 @@ export interface InventoryLotResource {
   updatedAt?: ISODateString;
 }
 
-export type UpsertInventoryLotResponse = ApiResponse<{ lot: InventoryLotResource }>;
+export type UpsertInventoryLotResponse = ApiResponse<{
+  lot: InventoryLotResource;
+}>;
 
 export type StockTransactionType = "IN" | "OUT" | "MOVE" | "ADJUST";
 export type StockTransactionReason =
@@ -176,20 +185,27 @@ export type CreateAuditResponse = ApiResponse<{ audit: AuditResource }>;
 
 export interface UserDraft {
   email: string;
-  name?: string;
-  passwordHash?: string;
-  roles?: Array<"admin" | "staff" | "volunteer">;
-  enabled?: boolean;
+  name: string;
+  password: string;
+  role?: "admin" | "staff" | "volunteer";
 }
 
 export interface UserResource {
   _id: ObjectIdString;
   email: string;
-  name?: string;
-  roles?: Array<"admin" | "staff" | "volunteer">;
-  enabled?: boolean;
-  createdAt?: ISODateString;
+  name: string;
+  role: ["admin" | "staff" | "volunteer"];
+  enabled: boolean;
+  createdAt: ISODateString;
 }
 
+export interface AuthenticateUserPayload {
+  email: string;
+  password: string;
+}
+
+export type AuthenticateUserResponse = ApiResponse<{ user: UserResource }>;
 export type CreateUserResponse = ApiResponse<{ user: UserResource }>;
+export type UpdateUserResponse = ApiResponse<{ user: UserResource }>;
+export type DeleteUserResponse = ApiResponse<{ deleted: boolean }>;
 export type ListUsersResponse = ApiResponse<{ users: UserResource[] }>;
