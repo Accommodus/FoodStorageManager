@@ -36,7 +36,7 @@ jobs:
       - name: Start backend server
         env:
           S_PORT: 3100
-          MONGODB_URI: mongodb://127.0.0.1:27017/foodstoragemanager_test
+          MONGODB_URI: ${{secrets.MONGODB_URI}}
         run: |
           set -eo pipefail
           npm --workspace=server run dev >/tmp/server.log 2>&1 &
