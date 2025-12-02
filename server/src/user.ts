@@ -9,10 +9,9 @@ import {
   sanitizeObjectId,
 } from "./validation.js";
 import { handleDatabaseError, sendError, sendSuccess } from "./responses.js";
-import type { UserResource } from "@foodstoragemanager/schema";
+import { toRole, type Role, type UserResource } from "@foodstoragemanager/schema";
 
 const COLLECTION = "users";
-const ALLOWED_ROLES = new Set(["admin", "staff", "volunteer"]);
 
 function formatNow(): string {
   return new Date().toISOString();
@@ -26,34 +25,26 @@ function toIsoString(value: unknown): string | undefined {
   } else return undefined;
 }
 
-function sanitizeRoles(value: unknown): string | undefined {
+const normalizeRole = (value: unknown): Role => {
   if (Array.isArray(value) && value.length > 0) {
-    const role = typeof value[0] === "string" ? value[0] : undefined;
-    const normalized = role?.trim().toLowerCase();
-    return normalized && ALLOWED_ROLES.has(normalized) ? normalized : undefined;
+    return toRole(value[0]);
   }
+  return toRole(value);
+};
 
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return ALLOWED_ROLES.has(normalized) ? normalized : undefined;
-  }
-
-  return undefined;
-}
-
-function serializeUser(doc: Record<string, unknown>): UserResource {
-  const role = sanitizeRoles(doc.roles ?? doc.role) ?? "volunteer";
+const serializeUser = (doc: Record<string, unknown>): UserResource => {
+  const role = normalizeRole(doc.roles ?? doc.role);
   const createdAt: string = toIsoString(doc.createdAt) ?? formatNow();
 
   return {
     _id: String(doc._id),
     email: String(doc.email),
     name: doc.name ? String(doc.name) : "",
-    role: [role as "admin" | "staff" | "volunteer"],
+    role,
     enabled: typeof doc.enabled === "boolean" ? doc.enabled : true,
     createdAt: createdAt,
   };
-}
+};
 
 async function getUsers(db: Connection): Promise<UserResource[]> {
   const collection = db.collection(COLLECTION);
@@ -121,9 +112,10 @@ export const createUser: ApiHandler = async (req, res, db) => {
     const enabled = typeof draft.enabled === "boolean" ? draft.enabled : true;
 
     const now = new Date();
+    const normalizedRole = normalizeRole(role);
     document = {
       email,
-      roles: role && ALLOWED_ROLES.has(role) ? [role] : ["volunteer"],
+      roles: [normalizedRole],
       enabled,
       createdAt: now,
       updatedAt: now,
@@ -229,20 +221,12 @@ export const updateUser: ApiHandler = async (req, res, db) => {
 
     if (draft.role !== undefined) {
       // Convert single role to roles array for database
-      const role =
+      const roleValue =
         typeof draft.role === "string"
           ? draft.role.trim().toLowerCase()
-          : undefined;
-
-      if (role && ALLOWED_ROLES.has(role)) {
-        update.roles = [role];
-      } else if (role === null || role === undefined || role === "") {
-        update.roles = [];
-      } else {
-        throw new Error(
-          `Invalid role: ${role}. Allowed roles are: admin, staff, volunteer.`
-        );
-      }
+          : draft.role;
+      const normalizedRole = normalizeRole(roleValue);
+      update.roles = [normalizedRole];
     }
 
     if (draft.enabled !== undefined) {
