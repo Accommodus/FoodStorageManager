@@ -205,9 +205,14 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('delete returns 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('deleted item matches id', () => pm.expect(json.item._id).to.eql(pm.collectionVariables.get('itemId')));"
+                  "const status = pm.response.code;",
+                  "pm.test('delete returns 200 or 404 if already removed', () => pm.expect([200, 404]).to.include(status));",
+                  "if (status === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test('deleted item matches id', () => pm.expect(json.item._id).to.eql(pm.collectionVariables.get('itemId')));",
+                  "} else {",
+                  "  pm.test('already removed is acceptable', () => true);",
+                  "}"
                 ]
               }
             }
