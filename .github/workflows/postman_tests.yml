@@ -1,0 +1,83 @@
+name: API Postman Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  newman:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongosh --eval \"db.adminCommand({ ping: 1 })\""
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Start backend server
+        env:
+          S_PORT: 3100
+          MONGODB_URI: mongodb://127.0.0.1:27017/foodstoragemanager_test
+        run: |
+          set -eo pipefail
+          npm --workspace=server run dev >/tmp/server.log 2>&1 &
+          echo $! > /tmp/server.pid
+
+          started=0
+          for i in {1..30}; do
+            if curl -sSf http://localhost:3100/health >/dev/null; then
+              echo "Server is up";
+              started=1
+              break
+            fi
+
+            if ! kill -0 $(cat /tmp/server.pid) 2>/dev/null; then
+              echo "Server process died; dumping log";
+              cat /tmp/server.log
+              exit 1
+            fi
+
+            sleep 2
+          done
+
+          if [ "$started" -ne 1 ]; then
+            echo "Server did not become healthy in time; dumping log"
+            cat /tmp/server.log
+            exit 1
+          fi
+
+      - name: Run Postman (Newman) collection
+        run: |
+          npx --yes newman run server/postman/backend.postman_collection.json \
+            -e server/postman/local.postman_environment.json \
+            --env-var baseUrl=http://localhost:3100
+
+      - name: Show server logs
+        if: always()
+        run: cat /tmp/server.log
+
+      - name: Stop server
+        if: always()
+        run: |
+          if [ -f /tmp/server.pid ]; then
+            kill $(cat /tmp/server.pid) 2>/dev/null || true
+          fi

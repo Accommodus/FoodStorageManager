@@ -1,0 +1,532 @@
+{
+  "info": {
+    "_postman_id": "50ae6559-7993-4de2-9353-f0903e2e8670",
+    "name": "FoodStorageManager Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!pm.collectionVariables.get('uniqueSuffix')) {",
+          "  const hex = '0123456789abcdef';",
+          "  const randomObjectId = () => Array.from({ length: 24 }, () => hex[Math.floor(Math.random() * hex.length)]).join('');",
+          "  const suffix = Date.now();",
+          "  pm.collectionVariables.set('uniqueSuffix', suffix);",
+          "  pm.collectionVariables.set('fakeLocationId', randomObjectId());",
+          "  pm.collectionVariables.set('itemName', `Automated Item ${suffix}`);",
+          "  pm.collectionVariables.set('updatedItemName', `Updated Item ${suffix}`);",
+          "  pm.collectionVariables.set('userEmail', `api-user-${suffix}@example.com`);",
+          "  pm.collectionVariables.set('userPassword', `P@ss-${suffix}`);",
+          "  pm.collectionVariables.set('userName', `API User ${suffix}`);",
+          "  pm.collectionVariables.set('updatedUserName', `API User ${suffix} Updated`);",
+          "}",
+          ""
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Health check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('returns 200 OK', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('reports healthy', () => pm.expect(body).to.have.property('healthy', true));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Items",
+      "item": [
+        {
+          "name": "Create item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item\": {\n    \"name\": \"{{itemName}}\",\n    \"locationId\": \"{{fakeLocationId}}\",\n    \"unit\": \"ea\",\n    \"note\": \"Created by Newman collection\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "items"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created item returns 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.expect(json).to.have.property('item');",
+                  "pm.collectionVariables.set('itemId', json.item._id);",
+                  "pm.test('item name echoed back', () => pm.expect(json.item.name).to.eql(pm.collectionVariables.get('itemName')));",
+                  "pm.test('item has location id', () => pm.expect(json.item.locationId).to.be.a('string'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update item",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"item\": {\n    \"name\": \"{{updatedItemName}}\",\n    \"tags\": [\"automated\", \"postman\"],\n    \"note\": \"Updated by Newman collection\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/items/{{itemId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "items",
+                "{{itemId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('update returns 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('same id returned', () => pm.expect(json.item._id).to.eql(pm.collectionVariables.get('itemId')));",
+                  "pm.test('name updated', () => pm.expect(json.item.name).to.eql(pm.collectionVariables.get('updatedItemName')));",
+                  "pm.test('tags applied', () => pm.expect(json.item.tags).to.include('postman'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List items includes created entry",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "items"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list returns 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.expect(json).to.have.property('items');",
+                  "const found = json.items.find((item) => item._id === pm.collectionVariables.get('itemId'));",
+                  "pm.test('created item present', () => pm.expect(found).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/items/{{itemId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "items",
+                "{{itemId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('delete returns 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('deleted item matches id', () => pm.expect(json.item._id).to.eql(pm.collectionVariables.get('itemId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirm item cleanup",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/items",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "items"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const status = pm.response.code;",
+                  "const id = pm.collectionVariables.get('itemId');",
+                  "if (status === 204) {",
+                  "  pm.test('no items left after delete', () => pm.expect(status).to.eql(204));",
+                  "} else {",
+                  "  pm.test('cleanup list returns 200', () => pm.expect(status).to.eql(200));",
+                  "  const json = pm.response.json();",
+                  "  const exists = Array.isArray(json.items) && json.items.some((item) => item._id === id);",
+                  "  pm.test('created item removed', () => pm.expect(exists).to.be.false);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Create user",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user\": {\n    \"email\": \"{{userEmail}}\",\n    \"name\": \"{{userName}}\",\n    \"password\": \"{{userPassword}}\",\n    \"role\": \"staff\",\n    \"enabled\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('created user returns 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.expect(json).to.have.property('user');",
+                  "pm.collectionVariables.set('userId', json.user._id);",
+                  "pm.test('user email echoed back', () => pm.expect(json.user.email).to.eql(pm.collectionVariables.get('userEmail')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List users includes created entry",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('list users returns 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "const found = json.users.find((user) => user._id === pm.collectionVariables.get('userId'));",
+                  "pm.test('created user present', () => pm.expect(found).to.exist);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login succeeds",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login returns 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('user id matches created user', () => pm.expect(json.user._id).to.eql(pm.collectionVariables.get('userId')));",
+                  "pm.test('user is enabled', () => pm.expect(json.user.enabled).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update user",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user\": {\n    \"name\": \"{{updatedUserName}}\",\n    \"role\": \"admin\",\n    \"enabled\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('update user returns 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('user id unchanged', () => pm.expect(json.user._id).to.eql(pm.collectionVariables.get('userId')));",
+                  "pm.test('name updated', () => pm.expect(json.user.name).to.eql(pm.collectionVariables.get('updatedUserName')));",
+                  "pm.test('role is admin', () => pm.expect(json.user.role).to.include('admin'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete user",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{userId}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('delete user returns 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('deleted flag true', () => pm.expect(json.deleted).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Confirm user cleanup",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "const id = pm.collectionVariables.get('userId');",
+                  "const exists = Array.isArray(json.users) && json.users.some((user) => user._id === id);",
+                  "pm.test('created user removed', () => pm.expect(exists).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login fails after deletion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "name": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login after delete is unauthorized', () => pm.response.to.have.status(401));",
+                  "const json = pm.response.json();",
+                  "pm.test('error message present', () => pm.expect(json.error.message).to.match(/invalid email or password/i));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    }
+  ]
+}
