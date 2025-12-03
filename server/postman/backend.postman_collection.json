@@ -415,7 +415,7 @@
                   "const json = pm.response.json();",
                   "pm.test('user id unchanged', () => pm.expect(json.user._id).to.eql(pm.collectionVariables.get('userId')));",
                   "pm.test('name updated', () => pm.expect(json.user.name).to.eql(pm.collectionVariables.get('updatedUserName')));",
-                  "pm.test('role is admin', () => pm.expect(json.user.role).to.include('admin'));"
+                  "pm.test('role is admin', () => pm.expect(json.user.role).to.eql('admin'));"
                 ]
               }
             }
