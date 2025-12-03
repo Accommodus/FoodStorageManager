@@ -1,12 +1,25 @@
 FROM node:22-bookworm-slim AS build
 
+ARG TARGETPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+
 WORKDIR /app
 
+# Copy manifests first so dependency install is cached and only re-runs when they change.
 COPY package.json package-lock.json ./
 COPY server/package.json server/package.json
 COPY client/package.json client/package.json
 COPY schema/package.json schema/package.json
-RUN npm ci
+
+RUN npm ci --workspaces
+
+# npm sometimes skips arch-specific optional deps (Rollup/SWC) in multi-arch builds; install them explicitly.
+RUN if [ "$TARGETARCH" = "arm64" ]; then \
+  npm install --no-save --no-package-lock @rollup/rollup-linux-arm64-gnu @swc/core-linux-arm64-gnu; \
+  elif [ "$TARGETARCH" = "amd64" ]; then \
+  npm install --no-save --no-package-lock @rollup/rollup-linux-x64-gnu @swc/core-linux-x64-gnu; \
+  fi
 
 # Copy the rest of the source and build the workspaces
 COPY . .
@@ -24,8 +37,8 @@ COPY --from=build /app/server/package.json /app/server/package.json
 COPY --from=build /app/client/package.json /app/client/package.json
 COPY --from=build /app/schema/package.json /app/schema/package.json
 
-# Install only prod deps
-RUN npm ci --omit=dev
+# Install only production dependencies (per-platform)
+RUN npm ci --omit=dev --workspaces
 
 COPY --from=build /app/server/dist ./server/dist
 COPY --from=build /app/client/dist ./client/dist
