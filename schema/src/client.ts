@@ -19,7 +19,7 @@ import {
   type UpdateItemResponse,
   type UpsertInventoryLotResponse,
   type ApiErrorPayload,
-} from "./types";
+} from "./types.js";
 
 import {
   type AuthenticateUserPayload,
@@ -30,7 +30,7 @@ import {
   type UpdateUserResponse,
   type UserDraft,
   type UserResource,
-} from "./user";
+} from "./user.js";
 
 type FetchLike = typeof fetch;
 

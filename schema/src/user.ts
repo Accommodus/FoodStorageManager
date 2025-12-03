@@ -1,4 +1,4 @@
-import type { ApiResponse, ISODateString, ObjectIdString } from "./types";
+import type { ApiResponse, ISODateString, ObjectIdString } from "./types.js";
 
 const allowedRoles = ["admin", "staff", "volunteer"] as const;
 export type Role = (typeof allowedRoles)[number];
