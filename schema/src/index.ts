@@ -3,8 +3,8 @@ export {
   type ClientInit,
   type RequestOptions,
   type SchemaClient,
-} from "./client";
+} from "./client.js";
 
-export { toRole } from "./user";
-export type * from "./types";
-export type * from "./user";
+export { toRole } from "./user.js";
+export type * from "./types.js";
+export type * from "./user.js";
