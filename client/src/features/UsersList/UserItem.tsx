@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { UserResource } from '@foodstoragemanager/schema';
+import { toRole, type UserResource } from '@foodstoragemanager/schema';
 import { BiSolidUser, BiSolidPencil, BiSolidTrash } from 'react-icons/bi';
 
 type UserItemProps = {
@@ -10,10 +10,8 @@ type UserItemProps = {
 
 export const UserItem = ({ user, onEditUser, onDeleteUser }: UserItemProps) => {
     const role = useMemo(() => {
-        const currentRole = user.role?.[0];
-        if (!currentRole) return '';
-
-        return currentRole[0].toUpperCase() + currentRole.slice(1).toLowerCase();
+        const normalized = toRole(user.role);
+        return `${normalized[0].toUpperCase()}${normalized.slice(1).toLowerCase()}`;
     }, [user.role]);
 
     const handleEditClick = () => {

@@ -17,7 +17,7 @@ for (const candidate of envPaths) {
   if (fs.existsSync(candidate)) {
     dotenv.config({
       path: candidate,
-      override: true,
+      override: false,
     });
     break;
   }

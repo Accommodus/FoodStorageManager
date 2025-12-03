@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { UserResource, UpdateUserResponse } from '@foodstoragemanager/schema';
+import { toRole, type UserResource, type UpdateUserResponse, type Role } from '@foodstoragemanager/schema';
 import { getSchemaClient } from '@lib/schemaClient';
 
 interface ChangeUserRoleModalProps {
@@ -9,8 +9,8 @@ interface ChangeUserRoleModalProps {
 }
 
 export const ChangeUserRoleModal = ({ user, onRoleChanged, onCancel }: ChangeUserRoleModalProps) => {
-    const currentRole = user.role?.[0] ?? '';
-    const [selectedRole, setSelectedRole] = useState<string>(currentRole);
+    const currentRole: Role = toRole(user.role);
+    const [selectedRole, setSelectedRole] = useState<Role>(currentRole);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +28,7 @@ export const ChangeUserRoleModal = ({ user, onRoleChanged, onCancel }: ChangeUse
 
             const client = getSchemaClient();
             const payload: UpdateUserResponse = await client.updateUser(user._id, {
-                role: selectedRole === '' ? undefined : (selectedRole as 'admin' | 'staff' | 'volunteer'),
+                role: selectedRole,
             });
 
             if ('error' in payload) {
@@ -45,9 +45,7 @@ export const ChangeUserRoleModal = ({ user, onRoleChanged, onCancel }: ChangeUse
         }
     };
 
-    const currentRoleDisplay = currentRole
-        ? currentRole[0].toUpperCase() + currentRole.slice(1).toLowerCase()
-        : 'No Role';
+    const currentRoleDisplay = `${currentRole[0].toUpperCase()}${currentRole.slice(1).toLowerCase()}`;
 
     return (
         <div className="p-6 bg-white rounded-lg shadow-md max-w-md w-full">
@@ -75,12 +73,11 @@ export const ChangeUserRoleModal = ({ user, onRoleChanged, onCancel }: ChangeUse
                     <select
                         id="role-select"
                         value={selectedRole}
-                        onChange={(e) => setSelectedRole(e.target.value)}
+                        onChange={(e) => setSelectedRole(toRole(e.target.value))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                         disabled={isSubmitting}
                     >
-                        <option value="">No Role</option>
                         <option value="admin">Admin</option>
                         <option value="staff">Staff</option>
                         <option value="volunteer">Volunteer</option>

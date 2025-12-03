@@ -5,4 +5,6 @@ export {
   type SchemaClient,
 } from "./client";
 
+export { toRole } from "./user";
 export type * from "./types";
+export type * from "./user";

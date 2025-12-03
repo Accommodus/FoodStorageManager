@@ -4,6 +4,7 @@ import Inventory from './pages/Inventory.tsx';
 import Users from './pages/Users.tsx';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { RequireAuth } from '@features/auth/RequireAuth';
+import { RequireAdmin } from '@features/auth/RequireAdmin';
 
 const App = () => {
     return (
@@ -24,7 +25,14 @@ const App = () => {
                         element={<Navigate to="inventory" replace />}
                     />
                     <Route path="inventory" element={<Inventory />} />
-                    <Route path="users" element={<Users />} />
+                    <Route
+                        path="users"
+                        element={
+                            <RequireAdmin>
+                                <Users />
+                            </RequireAdmin>
+                        }
+                    />
                 </Route>
                 <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>

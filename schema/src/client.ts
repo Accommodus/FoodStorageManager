@@ -4,30 +4,33 @@ import {
   type CreateAuditResponse,
   type CreateItemResponse,
   type CreateLocationResponse,
-  type CreateUserResponse,
-  type DeleteUserResponse,
   type DeleteItemResponse,
-  type AuthenticateUserPayload,
-  type AuthenticateUserResponse,
   type InventoryLotDraft,
   type InventoryLotResource,
   type ItemDraft,
   type ItemResource,
   type ListItemsResponse,
   type ListLocationsResponse,
-  type ListUsersResponse,
   type LocationDraft,
   type LocationResource,
   type RecordStockTransactionResponse,
   type StockTransactionDraft,
   type StockTransactionResource,
   type UpdateItemResponse,
-  type UpdateUserResponse,
   type UpsertInventoryLotResponse,
-  type UserDraft,
-  type UserResource,
   type ApiErrorPayload,
 } from "./types";
+
+import {
+  type AuthenticateUserPayload,
+  type AuthenticateUserResponse,
+  type CreateUserResponse,
+  type DeleteUserResponse,
+  type ListUsersResponse,
+  type UpdateUserResponse,
+  type UserDraft,
+  type UserResource,
+} from "./user";
 
 type FetchLike = typeof fetch;
 
