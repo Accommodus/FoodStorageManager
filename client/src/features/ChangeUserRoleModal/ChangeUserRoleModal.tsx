@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { UserResource, UpdateUserResponse, Role } from '@foodstoragemanager/schema';
+import { toRole, type UserResource, type UpdateUserResponse, type Role } from '@foodstoragemanager/schema';
 import { getSchemaClient } from '@lib/schemaClient';
 
 interface ChangeUserRoleModalProps {
@@ -9,7 +9,7 @@ interface ChangeUserRoleModalProps {
 }
 
 export const ChangeUserRoleModal = ({ user, onRoleChanged, onCancel }: ChangeUserRoleModalProps) => {
-    const currentRole: Role = user.role ?? 'volunteer';
+    const currentRole: Role = toRole(user.role);
     const [selectedRole, setSelectedRole] = useState<Role>(currentRole);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -45,9 +45,7 @@ export const ChangeUserRoleModal = ({ user, onRoleChanged, onCancel }: ChangeUse
         }
     };
 
-    const currentRoleDisplay = currentRole
-        ? currentRole[0].toUpperCase() + currentRole.slice(1).toLowerCase()
-        : 'Volunteer';
+    const currentRoleDisplay = `${currentRole[0].toUpperCase()}${currentRole.slice(1).toLowerCase()}`;
 
     return (
         <div className="p-6 bg-white rounded-lg shadow-md max-w-md w-full">
@@ -75,7 +73,7 @@ export const ChangeUserRoleModal = ({ user, onRoleChanged, onCancel }: ChangeUse
                     <select
                         id="role-select"
                         value={selectedRole}
-                        onChange={(e) => setSelectedRole(e.target.value as Role)}
+                        onChange={(e) => setSelectedRole(toRole(e.target.value))}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                         disabled={isSubmitting}

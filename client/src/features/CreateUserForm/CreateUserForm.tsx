@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { CreateUserResponse } from '@foodstoragemanager/schema';
+import type { CreateUserResponse, Role } from '@foodstoragemanager/schema';
+import { toRole } from '@foodstoragemanager/schema';
 import { getSchemaClient } from '@lib/schemaClient';
 
 type FormInputs = {
@@ -7,6 +8,7 @@ type FormInputs = {
     email: string;
     password: string;
     confirmPassword: string;
+    role: Role;
 };
 
 type CreateUserFormProps = {
@@ -19,6 +21,7 @@ const initialForm: FormInputs = {
     email: '',
     password: '',
     confirmPassword: '',
+    role: 'volunteer',
 };
 
 export const CreateUserForm = ({ onUserCreated, onCancel }: CreateUserFormProps) => {
@@ -30,7 +33,7 @@ export const CreateUserForm = ({ onUserCreated, onCancel }: CreateUserFormProps)
     const handleInputChange = (field: keyof FormInputs, value: string) => {
         setFormData((prev) => ({
             ...prev,
-            [field]: value,
+            [field]: field === 'role' ? (toRole(value) as Role) : value,
         }));
     };
 
@@ -58,6 +61,7 @@ export const CreateUserForm = ({ onUserCreated, onCancel }: CreateUserFormProps)
                 name: formData.name.trim(),
                 email: formData.email.trim(),
                 password: formData.password,
+                role: formData.role,
             });
 
             if ('error' in payload) {
@@ -114,6 +118,7 @@ export const CreateUserForm = ({ onUserCreated, onCancel }: CreateUserFormProps)
                         type="text"
                         value={formData.name}
                         onChange={(event) => handleInputChange('name', event.target.value)}
+                        autoComplete="name"
                         className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                     />
@@ -131,6 +136,7 @@ export const CreateUserForm = ({ onUserCreated, onCancel }: CreateUserFormProps)
                         type="email"
                         value={formData.email}
                         onChange={(event) => handleInputChange('email', event.target.value)}
+                        autoComplete="username"
                         className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                     />
@@ -148,6 +154,7 @@ export const CreateUserForm = ({ onUserCreated, onCancel }: CreateUserFormProps)
                         type="password"
                         value={formData.password}
                         onChange={(event) => handleInputChange('password', event.target.value)}
+                        autoComplete="new-password"
                         className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                     />
@@ -165,9 +172,30 @@ export const CreateUserForm = ({ onUserCreated, onCancel }: CreateUserFormProps)
                         type="password"
                         value={formData.confirmPassword}
                         onChange={(event) => handleInputChange('confirmPassword', event.target.value)}
+                        autoComplete="new-password"
                         className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                     />
+                </div>
+
+                <div>
+                    <label
+                        htmlFor="role"
+                        className="mb-1 block text-sm font-medium text-gray-700"
+                    >
+                        Role *
+                    </label>
+                    <select
+                        id="role"
+                        value={formData.role}
+                        onChange={(event) => handleInputChange('role', event.target.value)}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                    >
+                        <option value="admin">Admin</option>
+                        <option value="staff">Staff</option>
+                        <option value="volunteer">Volunteer</option>
+                    </select>
                 </div>
 
                 <div className="flex flex-wrap gap-3 pt-2">

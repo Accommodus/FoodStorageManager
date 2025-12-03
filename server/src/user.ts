@@ -30,26 +30,8 @@ const ensureRole = (value: unknown): Role => {
   const normalizedCandidate =
     typeof candidate === "string" ? candidate.trim().toLowerCase() : candidate;
 
-  const normalized = toRole(normalizedCandidate);
-
-  if (
-    normalizedCandidate !== undefined &&
-    normalizedCandidate !== null &&
-    normalizedCandidate !== "" &&
-    normalized !== normalizedCandidate
-  ) {
-    throw new Error("Invalid role.");
-  }
-
-  if (
-    normalizedCandidate !== undefined &&
-    normalizedCandidate !== null &&
-    typeof normalizedCandidate !== "string"
-  ) {
-    throw new Error("Invalid role.");
-  }
-
-  return normalized;
+  // toRole will coerce/validate and fall back to "volunteer" for anything invalid.
+  return toRole(normalizedCandidate);
 };
 
 const serializeUser = (doc: Record<string, unknown>): UserResource => {

@@ -10,7 +10,9 @@ import {
 import type {
     AuthenticateUserResponse,
     UserResource,
+    Role,
 } from '@foodstoragemanager/schema';
+import { toRole } from '@foodstoragemanager/schema';
 import { getSchemaClient } from '@lib/schemaClient';
 
 type AuthResult = { ok: true } | { ok: false; error: string };
@@ -26,10 +28,22 @@ const STORAGE_KEY = 'fsm:auth:user';
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+const normalizeUserRole = (user: UserResource | null): UserResource | null => {
+    if (!user) return null;
+
+    const rawRole: unknown = Array.isArray((user as unknown as { role?: unknown }).role)
+        ? (user as unknown as { role?: unknown[] }).role?.[0]
+        : (user as unknown as { role?: unknown }).role;
+
+    const role: Role = toRole(rawRole);
+    return { ...user, role };
+};
+
 const readStoredUser = (): UserResource | null => {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? (JSON.parse(raw) as UserResource) : null;
+        const parsed = raw ? (JSON.parse(raw) as UserResource) : null;
+        return normalizeUserRole(parsed);
     } catch (error) {
         console.warn("Failed to read stored user session", error);
         return null;
@@ -38,12 +52,13 @@ const readStoredUser = (): UserResource | null => {
 
 const writeStoredUser = (user: UserResource | null) => {
     try {
+        const normalized = normalizeUserRole(user);
         if (!user) {
             localStorage.removeItem(STORAGE_KEY);
             return;
         }
 
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
     } catch (error) {
         console.warn("Failed to persist user session", error);
     }
@@ -71,8 +86,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     return { ok: false, error: payload.error.message };
                 }
 
-                setUser(payload.user);
-                writeStoredUser(payload.user);
+                const normalizedUser = normalizeUserRole(payload.user);
+                setUser(normalizedUser);
+                writeStoredUser(normalizedUser);
                 return { ok: true };
             } catch (error) {
                 const message =
